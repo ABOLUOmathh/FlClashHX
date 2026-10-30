@@ -139,23 +139,23 @@ jobs:
           echo "hx_tag=$HX_TAG"  >> $GITHUB_OUTPUT
 
       # ────────────────────────────────────────────────────────────────
-      # 5. 开 Pull Request
+      # 5. 准备 PR 标题与正文
       # ────────────────────────────────────────────────────────────────
-      - name: Create Pull Request
+      - name: Prepare PR content
         if: steps.check.outputs.already_synced == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: pr_content
         run: |
           TAG="${{ steps.target.outputs.tag }}"
           BRANCH="${{ steps.check.outputs.sync_branch }}"
           HAS_CONFLICTS="${{ steps.merge.outputs.has_conflicts }}"
           HX_TAG="${{ steps.version.outputs.hx_tag }}"
           HX_VER="${{ steps.version.outputs.hx_ver }}"
-          VER="${{ steps.version.outputs.ver }}"
 
           if [ "$HAS_CONFLICTS" == "true" ]; then
-            TITLE="⚠️ sync: 上游 ${TAG} → FlClashHX ${HX_TAG} [需解决冲突]"
-            BODY="## ⚠️ 上游同步：${TAG} → ${HX_TAG}
+            echo "title=⚠️ sync: 上游 ${TAG} → FlClashHX ${HX_TAG} [需解决冲突]" >> $GITHUB_OUTPUT
+
+            cat > /tmp/pr_body.md << HEREDOC
+          ## ⚠️ 上游同步：${TAG} → ${HX_TAG}
 
           本次同步检测到合并冲突，**需要手动解决后才能发布**。
 
@@ -170,9 +170,7 @@ jobs:
           \`\`\`bash
           git fetch origin
           git checkout ${BRANCH}
-
-          # 用编辑器解决冲突标记（<<<<<<< HEAD ... >>>>>>> upstream/TAG）
-          # 解决后：
+          # 解决冲突标记后：
           git add -A
           git commit -m 'sync: resolve conflicts for ${TAG}'
           git push origin ${BRANCH}
@@ -180,39 +178,51 @@ jobs:
 
           解决后在此 PR 点击 **Merge** 即可。
 
-          ### 合并后发布新版本
-          合并此 PR 后，在 Actions 页面运行 **Release FlClashHX** workflow：
-          - 输入版本号：\`${HX_VER}\`
-          - 等待构建完成
+          ### 合并后发布
+          在 Actions 页面运行 **Release FlClashHX** workflow，输入版本号 \`${HX_VER}\`。
 
           ### 上游变更对比
-          https://github.com/chen08209/FlClash/releases/tag/${TAG}"
+          https://github.com/chen08209/FlClash/releases/tag/${TAG}
+          HEREDOC
 
           else
-            TITLE="✅ sync: 上游 ${TAG} → FlClashHX ${HX_TAG} [无冲突，可直接合并]"
-            BODY="## ✅ 上游同步：${TAG} → ${HX_TAG}
+            echo "title=✅ sync: 上游 ${TAG} → FlClashHX ${HX_TAG} [无冲突，可直接合并]" >> $GITHUB_OUTPUT
+
+            # 列出自定义 commit（从 tag 到 main）
+            CUSTOM_LOG=$(git log --oneline "refs/tags/${TAG}..origin/main" 2>/dev/null | head -20 || echo "(无法列出)")
+
+            cat > /tmp/pr_body.md << HEREDOC
+          ## ✅ 上游同步：${TAG} → ${HX_TAG}
 
           本次同步**无冲突**，可直接合并发布。
 
-          ### 合并后发布新版本
-          合并此 PR 后，在 Actions 页面运行 **Release FlClashHX** workflow：
-          - 输入版本号：\`${HX_VER}\`
-          - 等待构建完成自动发布
+          ### 合并后发布
+          在 Actions 页面运行 **Release FlClashHX** workflow，输入版本号 \`${HX_VER}\`。
 
           ### 上游变更对比
           https://github.com/chen08209/FlClash/releases/tag/${TAG}
 
-          ### 本次 merge 包含的改动
+          ### FlClashHX 自定义改动（保留在此次 merge 中）
           \`\`\`
-          $(git log --oneline upstream/${TAG}..origin/main | head -20 || true)
-          \`\`\`"
+          ${CUSTOM_LOG}
+          \`\`\`
+          HEREDOC
           fi
 
-          gh pr create \
-            --title  "$TITLE" \
-            --body   "$BODY" \
-            --base   main \
-            --head   "$BRANCH"
+      # ────────────────────────────────────────────────────────────────
+      # 6. 开 Pull Request（使用专用 Action 避免权限问题）
+      # ────────────────────────────────────────────────────────────────
+      - name: Create Pull Request
+        if: steps.check.outputs.already_synced == 'false'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.check.outputs.sync_branch }}
+          base: main
+          title: ${{ steps.pr_content.outputs.title }}
+          body-path: /tmp/pr_body.md
+          # 不自动提交额外改动（分支已在上一步 push 好了）
+          add-paths: ''
 
       - name: Summary
         if: always()
