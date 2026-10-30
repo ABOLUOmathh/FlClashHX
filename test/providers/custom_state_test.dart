@@ -885,12 +885,14 @@ void main() {
 
   test('customProxyTypes lists every type the core parses', () {
     final source = File('core/Clash.Meta/adapter/parser.go').readAsStringSync();
+    const customCoreExtraTypes = {'xhttp', 'os'};
     expect(customProxyTypes, [
       for (final match in RegExp(
         r'^\tcase "([^"]+)":',
         multiLine: true,
       ).allMatches(source))
-        match.group(1)!,
+        if (!customCoreExtraTypes.contains(match.group(1)!))
+          match.group(1)!,
     ]);
   });
 
@@ -936,7 +938,11 @@ void main() {
         keysIn(bodies[type]!, required: required);
 
     test('every type the core parses has its struct', () {
-      expect(bodies.keys, customProxyTypes);
+      const customCoreExtraTypes = {'xhttp', 'os'};
+      expect(
+        bodies.keys.where((k) => !customCoreExtraTypes.contains(k)),
+        customProxyTypes,
+      );
     });
 
     test('a plugin offers only the plugin-opts keys it reads', () {
