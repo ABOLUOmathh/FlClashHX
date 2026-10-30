@@ -24,7 +24,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # 使用 SYNC_PAT 推送 tag，以便能正常触发 build.yaml 构建发布（GITHUB_TOKEN 无法触发后续 workflow）
+          token: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Validate version format
         run: |
