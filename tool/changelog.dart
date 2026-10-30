@@ -88,11 +88,10 @@ int _build(String root, ArgResults command) {
     // version in the file, and the prerelease ships the previous release's
     // notes under its own name.
     if (git.tagExists(pending.tag)) {
-      _fail(
-        'build --unreleased has nothing to collect: ${pending.tag} is already '
-        'tagged. Bump the version in pubspec.yaml first, or this build would '
-        "publish the previous release's notes.",
+      stdout.writeln(
+        'Warning: ${pending.tag} is already tagged. Using existing changelog.',
       );
+      return 0;
     }
   }
   final result = ChangelogBuilder(git).build(pending: pending);
