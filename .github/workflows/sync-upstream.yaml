@@ -24,8 +24,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # 用 PAT 以便后续 push 分支和开 PR（默认 GITHUB_TOKEN 在 Actions 里无法触发其他 workflow）
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # 优先用 SYNC_PAT（classic PAT，需要 repo + workflow scope）
+          # 若未设置则回落到 GITHUB_TOKEN（PR 创建步骤可能失败）
+          token: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Configure git identity
         run: |
@@ -215,7 +216,8 @@ jobs:
       - name: Create Pull Request
         if: steps.check.outputs.already_synced == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 必须用 PAT（SYNC_PAT）才能创建 PR；GITHUB_TOKEN 被 GitHub 安全策略拒绝
+          GH_TOKEN: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh pr create \
             --title  "${{ steps.pr_content.outputs.title }}" \
