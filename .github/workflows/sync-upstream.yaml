@@ -214,15 +214,14 @@ jobs:
       # ────────────────────────────────────────────────────────────────
       - name: Create Pull Request
         if: steps.check.outputs.already_synced == 'false'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.check.outputs.sync_branch }}
-          base: main
-          title: ${{ steps.pr_content.outputs.title }}
-          body-path: /tmp/pr_body.md
-          # 不自动提交额外改动（分支已在上一步 push 好了）
-          add-paths: ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title  "${{ steps.pr_content.outputs.title }}" \
+            --body-file /tmp/pr_body.md \
+            --base   main \
+            --head   "${{ steps.check.outputs.sync_branch }}"
 
       - name: Summary
         if: always()
