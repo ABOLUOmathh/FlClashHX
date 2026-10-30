@@ -63,7 +63,7 @@ jobs:
           echo "🎯 目标上游 tag：$TAG"
 
       # ────────────────────────────────────────────────────────────────
-      # 2. 判断此 tag 是否已经处理过
+      # 2. 判断此 tag 是否已经处理过或已合入
       # ────────────────────────────────────────────────────────────────
       - name: Check whether this tag was already synced
         id: check
@@ -71,15 +71,34 @@ jobs:
           TAG="${{ steps.target.outputs.tag }}"
           SYNC_BRANCH="sync/upstream-${TAG}"
 
-          # 检查远端是否已存在同名分支
-          if git ls-remote --exit-code origin "refs/heads/${SYNC_BRANCH}" > /dev/null 2>&1; then
-            echo "already_synced=true"  >> $GITHUB_OUTPUT
-            echo "ℹ️ 分支 ${SYNC_BRANCH} 已存在，跳过（上次 PR 尚未处理或已合并）"
-          else
-            echo "already_synced=false" >> $GITHUB_OUTPUT
-            echo "sync_branch=${SYNC_BRANCH}" >> $GITHUB_OUTPUT
-            echo "✅ 发现新版本 ${TAG}，准备创建同步分支"
+          # 解析 tag 对应的 commit hash
+          COMMIT=$(git rev-list -n1 "refs/tags/${TAG}" 2>/dev/null || git rev-list -n1 "$TAG" 2>/dev/null)
+          if [ -z "$COMMIT" ]; then
+            echo "::error::无法解析 tag ${TAG} 对应的 commit，请确认 tag 已通过 fetch --tags 拉取"
+            exit 1
           fi
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "📌 上游 Tag ${TAG} → Commit: ${COMMIT}"
+
+          # 1. 检查该 commit 是否已经合入当前 main
+          if git merge-base --is-ancestor "$COMMIT" HEAD 2>/dev/null; then
+            echo "already_synced=true"   >> $GITHUB_OUTPUT
+            echo "skip_reason=ancestor"  >> $GITHUB_OUTPUT
+            echo "ℹ️ 上游 tag ${TAG} 已经包含在当前分支中，代码已是最新状态，无需同步。"
+            exit 0
+          fi
+
+          # 2. 检查远端是否已存在同名同步分支
+          if git ls-remote --exit-code origin "refs/heads/${SYNC_BRANCH}" > /dev/null 2>&1; then
+            echo "already_synced=true"         >> $GITHUB_OUTPUT
+            echo "skip_reason=branch_exists"   >> $GITHUB_OUTPUT
+            echo "ℹ️ 分支 ${SYNC_BRANCH} 已存在，跳过（已有 PR 处理中）"
+            exit 0
+          fi
+
+          echo "already_synced=false" >> $GITHUB_OUTPUT
+          echo "sync_branch=${SYNC_BRANCH}" >> $GITHUB_OUTPUT
+          echo "✅ 发现未同步的新版本 ${TAG}，准备创建同步分支"
 
       # ────────────────────────────────────────────────────────────────
       # 3. 尝试自动 merge，推送分支
@@ -90,16 +109,10 @@ jobs:
         run: |
           TAG="${{ steps.target.outputs.tag }}"
           BRANCH="${{ steps.check.outputs.sync_branch }}"
+          COMMIT="${{ steps.check.outputs.commit }}"
 
           git checkout -b "$BRANCH"
-
-          # 解析 tag 对应的 commit hash（tags/vX.Y.Z 或直接用 hash）
-          COMMIT=$(git rev-list -n1 "refs/tags/${TAG}" 2>/dev/null || git rev-list -n1 "$TAG" 2>/dev/null)
-          if [ -z "$COMMIT" ]; then
-            echo "::error::无法解析 tag ${TAG} 对应的 commit，请确认 tag 已通过 fetch --tags 拉取"
-            exit 1
-          fi
-          echo "📌 Tag ${TAG} → commit ${COMMIT}"
+          echo "📌 正在合并上游 Commit: ${COMMIT}"
 
           # 尝试 merge 上游 commit；若有冲突则保留冲突标记并提交
           if git merge "$COMMIT" \
@@ -112,13 +125,10 @@ jobs:
             echo "⚠️ 存在冲突，提交冲突标记供 PR review"
             # 将所有文件（含冲突标记）加入暂存并提交
             git add -A
-            # 仅在有变更时才提交（避免 "nothing to commit" 导致的 exit 1）
             if ! git diff --cached --quiet; then
               git commit \
                 -m "sync: merge upstream ${TAG} [⚠️ CONFLICTS - need manual resolution]" \
                 --no-verify
-            else
-              echo "ℹ️ 无文件变更（可能已是最新状态）"
             fi
           fi
 
@@ -216,10 +226,10 @@ jobs:
       - name: Create Pull Request
         if: steps.check.outputs.already_synced == 'false'
         env:
-          # 必须用 PAT（SYNC_PAT）才能创建 PR；GITHUB_TOKEN 被 GitHub 安全策略拒绝
           GH_TOKEN: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
         run: |
           gh pr create \
+            --repo   "${{ github.repository }}" \
             --title  "${{ steps.pr_content.outputs.title }}" \
             --body-file /tmp/pr_body.md \
             --base   main \
@@ -229,8 +239,13 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.check.outputs.already_synced }}" == "true" ]; then
-            echo "### ⏭️ 已跳过" >> $GITHUB_STEP_SUMMARY
-            echo "上游 ${{ steps.target.outputs.tag }} 的同步分支已存在，无需重复创建。" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.check.outputs.skip_reason }}" == "ancestor" ]; then
+              echo "### ✅ 代码已是最新状态" >> $GITHUB_STEP_SUMMARY
+              echo "上游最新稳定版 ${{ steps.target.outputs.tag }} 已经包含在当前 main 中，无需同步。" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ⏭️ 已跳过" >> $GITHUB_STEP_SUMMARY
+              echo "上游 ${{ steps.target.outputs.tag }} 的同步分支已存在，无需重复创建。" >> $GITHUB_STEP_SUMMARY
+            fi
           elif [ "${{ steps.merge.outputs.has_conflicts }}" == "true" ]; then
             echo "### ⚠️ 已创建 PR（存在冲突）" >> $GITHUB_STEP_SUMMARY
             echo "目标：${{ steps.target.outputs.tag }} → ${{ steps.version.outputs.hx_tag }}" >> $GITHUB_STEP_SUMMARY
