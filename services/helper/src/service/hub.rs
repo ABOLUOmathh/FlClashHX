@@ -317,7 +317,10 @@ fn open_verified_core(path: &Path, expected_sha256: &str) -> Result<File, Error>
 
 #[cfg(not(target_os = "linux"))]
 fn is_allowed_core_address(address: &str) -> bool {
-    let Some(suffix) = address.strip_prefix(CORE_PIPE_PREFIX) else {
+    let suffix = address
+        .strip_prefix(r"\\.\pipe\FlClashHXCore_")
+        .or_else(|| address.strip_prefix(CORE_PIPE_PREFIX));
+    let Some(suffix) = suffix else {
         return false;
     };
     is_valid_session_id(suffix)
@@ -325,7 +328,10 @@ fn is_allowed_core_address(address: &str) -> bool {
 
 #[cfg(target_os = "linux")]
 fn is_allowed_core_address(address: &str) -> bool {
-    let Some(suffix) = address.strip_prefix(CORE_SOCKET_PREFIX) else {
+    let suffix = address
+        .strip_prefix("/tmp/FlClashHXSocket_")
+        .or_else(|| address.strip_prefix(CORE_SOCKET_PREFIX));
+    let Some(suffix) = suffix else {
         return false;
     };
     let Some(digits) = suffix.strip_suffix(CORE_SOCKET_SUFFIX) else {
@@ -771,7 +777,7 @@ pub(super) fn routes() -> impl Filter<Extract = (impl Reply,), Error = Infallibl
             let local_host = host.is_none_or(|host| {
                 host.parse::<warp::http::uri::Authority>()
                     .is_ok_and(|authority| {
-                        ["127.0.0.1", "localhost", "FlClashHelperService"]
+                        ["127.0.0.1", "localhost", "FlClashHelperService", "FlClashHXHelperService"]
                             .iter()
                             .any(|host| authority.host().eq_ignore_ascii_case(host))
                     })
@@ -1442,7 +1448,7 @@ mod tests {
                     .is_none());
             }
         }
-        for host in ["127.0.0.1:47890", "localhost:47890", "FlClashHelperService"] {
+        for host in ["127.0.0.1:47890", "localhost:47890", "FlClashHelperService", "FlClashHXHelperService"] {
             let response = warp::test::request()
                 .path("/logs")
                 .header("host", host)
