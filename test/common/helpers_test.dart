@@ -133,6 +133,15 @@ void main() {
     test('handles missing minor/patch', () {
       expect(compareVersions('1', '1.0.0'), 0);
     });
+
+    test('handles custom and prerelease tags', () {
+      expect(compareVersions('v0.9.2-hx.2', '0.9.2-hx.1'), greaterThan(0));
+      expect(compareVersions('0.9.2-hx.1', 'v0.9.2-hx.2'), lessThan(0));
+      expect(compareVersions('v0.9.2-hx.2', 'v0.9.2-hx.2'), 0);
+      expect(compareVersions('v0.9.2-hx.2', '0.9.2'), greaterThan(0));
+      expect(compareVersions('0.9.2', 'v0.9.2-hx.2'), lessThan(0));
+      expect(compareVersions('v0.9.3', 'v0.9.2-hx.2'), greaterThan(0));
+    });
   });
 
   group('getViewMode', () {

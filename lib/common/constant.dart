@@ -10,6 +10,7 @@ import 'package:fl_clash/models/models.dart';
 import 'package:material_ui/material_ui.dart';
 
 const appName = 'FlClashHX';
+const appVersion = '0.9.2-hx.3';
 const appHelperService = 'FlClashHXHelperService';
 const coreManifestName = 'manifest.json';
 const browserUa =
