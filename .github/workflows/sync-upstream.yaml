@@ -46,17 +46,15 @@ jobs:
           if [ -n "${{ github.event.inputs.upstream_tag }}" ]; then
             TAG="${{ github.event.inputs.upstream_tag }}"
           else
-            # 取最新稳定版 tag（不含 alpha/beta/rc/hx）
+            # 取最新稳定版 tag（纯 vX.Y.Z，不含任何连字符后缀）
+            # 只保留完全匹配 vMAJOR.MINOR.PATCH 格式的 tag
             TAG=$(git tag --list 'v*' --sort=-version:refname \
-                  | grep -v -- '-alpha' \
-                  | grep -v -- '-beta' \
-                  | grep -v -- '-rc' \
-                  | grep -v -- '-hx' \
+                  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
                   | head -1)
           fi
 
           if [ -z "$TAG" ]; then
-            echo "::error::未能找到任何上游稳定版 tag，请检查 remote"
+            echo "::error::未能找到任何上游稳定版 tag（格式：vX.Y.Z），请检查 remote"
             exit 1
           fi
 
@@ -94,8 +92,16 @@ jobs:
 
           git checkout -b "$BRANCH"
 
-          # 尝试 merge 上游 tag；若有冲突则保留冲突标记并提交
-          if git merge "upstream/$TAG" \
+          # 解析 tag 对应的 commit hash（tags/vX.Y.Z 或直接用 hash）
+          COMMIT=$(git rev-list -n1 "refs/tags/${TAG}" 2>/dev/null || git rev-list -n1 "$TAG" 2>/dev/null)
+          if [ -z "$COMMIT" ]; then
+            echo "::error::无法解析 tag ${TAG} 对应的 commit，请确认 tag 已通过 fetch --tags 拉取"
+            exit 1
+          fi
+          echo "📌 Tag ${TAG} → commit ${COMMIT}"
+
+          # 尝试 merge 上游 commit；若有冲突则保留冲突标记并提交
+          if git merge "$COMMIT" \
                --no-edit \
                -m "sync: merge upstream ${TAG} into FlClashHX"; then
             echo "has_conflicts=false" >> $GITHUB_OUTPUT
@@ -105,9 +111,14 @@ jobs:
             echo "⚠️ 存在冲突，提交冲突标记供 PR review"
             # 将所有文件（含冲突标记）加入暂存并提交
             git add -A
-            git commit \
-              -m "sync: merge upstream ${TAG} [⚠️ CONFLICTS - need manual resolution]" \
-              --no-verify
+            # 仅在有变更时才提交（避免 "nothing to commit" 导致的 exit 1）
+            if ! git diff --cached --quiet; then
+              git commit \
+                -m "sync: merge upstream ${TAG} [⚠️ CONFLICTS - need manual resolution]" \
+                --no-verify
+            else
+              echo "ℹ️ 无文件变更（可能已是最新状态）"
+            fi
           fi
 
           git push origin "$BRANCH"
