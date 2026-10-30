@@ -777,9 +777,14 @@ pub(super) fn routes() -> impl Filter<Extract = (impl Reply,), Error = Infallibl
             let local_host = host.is_none_or(|host| {
                 host.parse::<warp::http::uri::Authority>()
                     .is_ok_and(|authority| {
-                        ["127.0.0.1", "localhost", "FlClashHelperService", "FlClashHXHelperService"]
-                            .iter()
-                            .any(|host| authority.host().eq_ignore_ascii_case(host))
+                        [
+                            "127.0.0.1",
+                            "localhost",
+                            "FlClashHelperService",
+                            "FlClashHXHelperService",
+                        ]
+                        .iter()
+                        .any(|host| authority.host().eq_ignore_ascii_case(host))
                     })
             });
             if origin.is_some() || !local_host {
@@ -1448,7 +1453,12 @@ mod tests {
                     .is_none());
             }
         }
-        for host in ["127.0.0.1:47890", "localhost:47890", "FlClashHelperService", "FlClashHXHelperService"] {
+        for host in [
+            "127.0.0.1:47890",
+            "localhost:47890",
+            "FlClashHelperService",
+            "FlClashHXHelperService",
+        ] {
             let response = warp::test::request()
                 .path("/logs")
                 .header("host", host)
