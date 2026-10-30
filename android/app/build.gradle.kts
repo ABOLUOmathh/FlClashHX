@@ -13,10 +13,12 @@ val localProperties = Properties().apply {
     }
 }
 
-val releaseStoreFile = file("keystore.jks")
-val releaseStorePassword = localProperties.getProperty("storePassword")
-val releaseKeyAlias = localProperties.getProperty("keyAlias")
-val releaseKeyPassword = localProperties.getProperty("keyPassword")
+val releaseStoreFile = file("keystore.jks").let {
+    if (it.exists()) it else file("flclashhx-release.jks")
+}
+val releaseStorePassword = localProperties.getProperty("storePassword") ?: "FlClashHX@Release2026"
+val releaseKeyAlias = localProperties.getProperty("keyAlias") ?: "flclashhx"
+val releaseKeyPassword = localProperties.getProperty("keyPassword") ?: "FlClashHX@Release2026"
 val hasReleaseSigning = releaseStoreFile.exists() &&
     releaseStorePassword != null &&
     releaseKeyAlias != null &&
@@ -33,7 +35,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.follow.clash"
+        applicationId = "com.follow.clashhx"
         minSdk = flutter.minSdkVersion
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = flutter.versionCode

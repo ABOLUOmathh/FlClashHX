@@ -1,8 +1,8 @@
-display_name: FlClash
-package_name: FlClash
+display_name: FlClashHX
+package_name: FlClashHX
 maintainer:
-  name: chen08209
-  email: chen08209@gmail.com
+  name: ABOLUOmathh
+  email: 123316849+ABOLUOmathh@users.noreply.github.com
 
 priority: optional
 section: x11
@@ -18,26 +18,28 @@ dependencies:
 # its teardown belongs here; the binary is already gone when postrm runs.
 postuninstall_scripts:
   - 'case "${1:-}" in remove|purge) ;; *) exit 0 ;; esac'
-  - 'systemctl disable --now flclash-helper.service >/dev/null 2>&1 || true'
-  - 'rm -f /etc/systemd/system/flclash-helper.service'
+  - 'systemctl disable --now flclashhx-helper.service >/dev/null 2>&1 || true'
+  - 'rm -f /etc/systemd/system/flclashhx-helper.service'
   - 'systemctl daemon-reload >/dev/null 2>&1 || true'
 
 supported_mime_type:
   - x-scheme-handler/clash
   - x-scheme-handler/clashmeta
   - x-scheme-handler/flclash
+  - x-scheme-handler/flclashhx
 
 keywords:
+  - FlClashHX
   - FlClash
   - Clash
   - ClashMeta
   - Proxy
 
-generic_name: FlClash
+generic_name: FlClashHX
 
 categories:
   - Network
 
 startup_notify: true
 
-startup_wm_class: com.follow.clash
+startup_wm_class: com.follow.clashhx

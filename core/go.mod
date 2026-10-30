@@ -144,6 +144,7 @@ require (
 	golang.org/x/time v0.10.0 // indirect
 	golang.org/x/tools v0.50.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
+	lukechampine.com/blake3 v1.1.7 // indirect
 )
 
 tool (
