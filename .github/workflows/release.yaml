@@ -1,0 +1,89 @@
+name: Release FlClashHX
+
+# 手动触发：输入新版本号后自动更新 constant.dart、打 tag、推送，触发 build.yaml 发布
+on:
+  workflow_dispatch:
+    inputs:
+      hx_version:
+        description: '新版本号（不含 v 前缀，例如：0.9.3-hx.1）'
+        required: true
+      release_notes:
+        description: '发布说明（留空则自动从 CHANGELOG 生成）'
+        required: false
+        default: ''
+
+jobs:
+  release:
+    name: Bump version & tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.hx_version }}"
+          # 必须匹配 X.Y.Z-hx.N 格式
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+-hx\.[0-9]+$'; then
+            echo "::error::版本号格式不正确：'${VERSION}'"
+            echo "::error::请使用格式：X.Y.Z-hx.N（例如：0.9.3-hx.1）"
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          # 检查 tag 是否已存在
+          if git tag --list "$TAG" | grep -q "$TAG"; then
+            echo "::error::Tag ${TAG} 已存在，请检查版本号"
+            exit 1
+          fi
+          echo "✅ 版本号格式正确：${VERSION}"
+
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update appVersion in constant.dart
+        run: |
+          VERSION="${{ github.event.inputs.hx_version }}"
+          FILE="lib/common/constant.dart"
+
+          # 替换 appVersion 行
+          sed -i "s/^const appVersion = '.*';/const appVersion = '${VERSION}';/" "$FILE"
+
+          # 验证替换结果
+          if grep -q "const appVersion = '${VERSION}';" "$FILE"; then
+            echo "✅ constant.dart 已更新：appVersion = '${VERSION}'"
+          else
+            echo "::error::更新 constant.dart 失败，请检查文件格式"
+            cat "$FILE" | grep appVersion
+            exit 1
+          fi
+
+      - name: Commit version bump
+        run: |
+          VERSION="${{ github.event.inputs.hx_version }}"
+          TAG="v${VERSION}"
+          git add lib/common/constant.dart
+          git commit -m "chore(release): bump version to ${VERSION}"
+          git tag "${TAG}"
+          git push origin main --tags
+          echo "🚀 已推送 tag ${TAG}，build.yaml 将自动触发构建发布"
+
+      - name: Summary
+        run: |
+          VERSION="${{ github.event.inputs.hx_version }}"
+          TAG="v${VERSION}"
+          echo "### 🚀 发布触发成功" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 项目 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| 版本 | \`${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | \`${TAG}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 构建状态 | [查看 Actions](https://github.com/${{ github.repository }}/actions) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release 页 | [查看 Releases](https://github.com/${{ github.repository }}/releases/tag/${TAG}) |" >> $GITHUB_STEP_SUMMARY

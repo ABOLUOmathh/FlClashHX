@@ -1,0 +1,220 @@
+name: Sync Upstream
+
+# 每天 UTC 02:00 自动检查上游是否有新版本，也可以手动指定 tag 触发
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: '指定上游 tag（留空则自动取最新稳定版）'
+        required: false
+        default: ''
+
+jobs:
+  sync:
+    name: Check & Sync Upstream
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout FlClashHX
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # 用 PAT 以便后续 push 分支和开 PR（默认 GITHUB_TOKEN 在 Actions 里无法触发其他 workflow）
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # ────────────────────────────────────────────────────────────────
+      # 1. 获取上游最新稳定 tag
+      # ────────────────────────────────────────────────────────────────
+      - name: Add upstream remote & fetch tags
+        run: |
+          git remote add upstream https://github.com/chen08209/FlClash.git
+          git fetch upstream --tags --no-recurse-submodules
+
+      - name: Determine target upstream tag
+        id: target
+        run: |
+          if [ -n "${{ github.event.inputs.upstream_tag }}" ]; then
+            TAG="${{ github.event.inputs.upstream_tag }}"
+          else
+            # 取最新稳定版 tag（不含 alpha/beta/rc/hx）
+            TAG=$(git tag --list 'v*' --sort=-version:refname \
+                  | grep -v -- '-alpha' \
+                  | grep -v -- '-beta' \
+                  | grep -v -- '-rc' \
+                  | grep -v -- '-hx' \
+                  | head -1)
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "::error::未能找到任何上游稳定版 tag，请检查 remote"
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "🎯 目标上游 tag：$TAG"
+
+      # ────────────────────────────────────────────────────────────────
+      # 2. 判断此 tag 是否已经处理过
+      # ────────────────────────────────────────────────────────────────
+      - name: Check whether this tag was already synced
+        id: check
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          SYNC_BRANCH="sync/upstream-${TAG}"
+
+          # 检查远端是否已存在同名分支
+          if git ls-remote --exit-code origin "refs/heads/${SYNC_BRANCH}" > /dev/null 2>&1; then
+            echo "already_synced=true"  >> $GITHUB_OUTPUT
+            echo "ℹ️ 分支 ${SYNC_BRANCH} 已存在，跳过（上次 PR 尚未处理或已合并）"
+          else
+            echo "already_synced=false" >> $GITHUB_OUTPUT
+            echo "sync_branch=${SYNC_BRANCH}" >> $GITHUB_OUTPUT
+            echo "✅ 发现新版本 ${TAG}，准备创建同步分支"
+          fi
+
+      # ────────────────────────────────────────────────────────────────
+      # 3. 尝试自动 merge，推送分支
+      # ────────────────────────────────────────────────────────────────
+      - name: Create sync branch & merge upstream
+        if: steps.check.outputs.already_synced == 'false'
+        id: merge
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          BRANCH="${{ steps.check.outputs.sync_branch }}"
+
+          git checkout -b "$BRANCH"
+
+          # 尝试 merge 上游 tag；若有冲突则保留冲突标记并提交
+          if git merge "upstream/$TAG" \
+               --no-edit \
+               -m "sync: merge upstream ${TAG} into FlClashHX"; then
+            echo "has_conflicts=false" >> $GITHUB_OUTPUT
+            echo "🎉 无冲突，自动合并成功"
+          else
+            echo "has_conflicts=true" >> $GITHUB_OUTPUT
+            echo "⚠️ 存在冲突，提交冲突标记供 PR review"
+            # 将所有文件（含冲突标记）加入暂存并提交
+            git add -A
+            git commit \
+              -m "sync: merge upstream ${TAG} [⚠️ CONFLICTS - need manual resolution]" \
+              --no-verify
+          fi
+
+          git push origin "$BRANCH"
+
+      # ────────────────────────────────────────────────────────────────
+      # 4. 计算新 HX 版本号
+      # ────────────────────────────────────────────────────────────────
+      - name: Compute new HX version
+        if: steps.check.outputs.already_synced == 'false'
+        id: version
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          VER="${TAG#v}"          # e.g.  0.9.3
+          HX_VER="${VER}-hx.1"   # e.g.  0.9.3-hx.1
+          HX_TAG="v${HX_VER}"    # e.g.  v0.9.3-hx.1
+          echo "ver=$VER"         >> $GITHUB_OUTPUT
+          echo "hx_ver=$HX_VER"  >> $GITHUB_OUTPUT
+          echo "hx_tag=$HX_TAG"  >> $GITHUB_OUTPUT
+
+      # ────────────────────────────────────────────────────────────────
+      # 5. 开 Pull Request
+      # ────────────────────────────────────────────────────────────────
+      - name: Create Pull Request
+        if: steps.check.outputs.already_synced == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+          BRANCH="${{ steps.check.outputs.sync_branch }}"
+          HAS_CONFLICTS="${{ steps.merge.outputs.has_conflicts }}"
+          HX_TAG="${{ steps.version.outputs.hx_tag }}"
+          HX_VER="${{ steps.version.outputs.hx_ver }}"
+          VER="${{ steps.version.outputs.ver }}"
+
+          if [ "$HAS_CONFLICTS" == "true" ]; then
+            TITLE="⚠️ sync: 上游 ${TAG} → FlClashHX ${HX_TAG} [需解决冲突]"
+            BODY="## ⚠️ 上游同步：${TAG} → ${HX_TAG}
+
+          本次同步检测到合并冲突，**需要手动解决后才能发布**。
+
+          ### 常见冲突文件
+          | 文件 | 原因 |
+          |------|------|
+          | \`.github/workflows/build.yaml\` | CI 仓库判断逻辑与上游不同 |
+          | \`lib/common/constant.dart\` | appName / packageName / repository 不同 |
+          | \`lib/views/about.dart\` | 内核 / 项目链接不同 |
+
+          ### 手动解决步骤
+          \`\`\`bash
+          git fetch origin
+          git checkout ${BRANCH}
+
+          # 用编辑器解决冲突标记（<<<<<<< HEAD ... >>>>>>> upstream/TAG）
+          # 解决后：
+          git add -A
+          git commit -m 'sync: resolve conflicts for ${TAG}'
+          git push origin ${BRANCH}
+          \`\`\`
+
+          解决后在此 PR 点击 **Merge** 即可。
+
+          ### 合并后发布新版本
+          合并此 PR 后，在 Actions 页面运行 **Release FlClashHX** workflow：
+          - 输入版本号：\`${HX_VER}\`
+          - 等待构建完成
+
+          ### 上游变更对比
+          https://github.com/chen08209/FlClash/releases/tag/${TAG}"
+
+          else
+            TITLE="✅ sync: 上游 ${TAG} → FlClashHX ${HX_TAG} [无冲突，可直接合并]"
+            BODY="## ✅ 上游同步：${TAG} → ${HX_TAG}
+
+          本次同步**无冲突**，可直接合并发布。
+
+          ### 合并后发布新版本
+          合并此 PR 后，在 Actions 页面运行 **Release FlClashHX** workflow：
+          - 输入版本号：\`${HX_VER}\`
+          - 等待构建完成自动发布
+
+          ### 上游变更对比
+          https://github.com/chen08209/FlClash/releases/tag/${TAG}
+
+          ### 本次 merge 包含的改动
+          \`\`\`
+          $(git log --oneline upstream/${TAG}..origin/main | head -20 || true)
+          \`\`\`"
+          fi
+
+          gh pr create \
+            --title  "$TITLE" \
+            --body   "$BODY" \
+            --base   main \
+            --head   "$BRANCH"
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.check.outputs.already_synced }}" == "true" ]; then
+            echo "### ⏭️ 已跳过" >> $GITHUB_STEP_SUMMARY
+            echo "上游 ${{ steps.target.outputs.tag }} 的同步分支已存在，无需重复创建。" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.merge.outputs.has_conflicts }}" == "true" ]; then
+            echo "### ⚠️ 已创建 PR（存在冲突）" >> $GITHUB_STEP_SUMMARY
+            echo "目标：${{ steps.target.outputs.tag }} → ${{ steps.version.outputs.hx_tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "请手动解决冲突后合并 PR，再运行 Release workflow 发布。" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ 已创建 PR（无冲突）" >> $GITHUB_STEP_SUMMARY
+            echo "目标：${{ steps.target.outputs.tag }} → ${{ steps.version.outputs.hx_tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "可直接合并 PR，再运行 Release workflow 发布。" >> $GITHUB_STEP_SUMMARY
+          fi
