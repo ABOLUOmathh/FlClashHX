@@ -37,9 +37,10 @@ jobs:
             exit 1
           fi
           TAG="v${VERSION}"
-          # 检查 tag 是否已存在
-          if git tag --list "$TAG" | grep -q "$TAG"; then
-            echo "::error::Tag ${TAG} 已存在，请检查版本号"
+          # 同时检查本地 tag 和远端 tag，防止 fetch-depth:0 未拉取全部 tags 时漏检
+          git fetch --tags --quiet 2>/dev/null || true
+          if git rev-parse "$TAG" > /dev/null 2>&1; then
+            echo "::error::Tag ${TAG} 已存在（本地或远端），请检查版本号"
             exit 1
           fi
           echo "✅ 版本号格式正确：${VERSION}"
