@@ -125,19 +125,7 @@ jobs:
             echo "⚠️ 存在冲突，自动处理特殊文件后提交冲突标记供 PR review"
 
             # 1. 自动处理 .gitmodules：git 不允许 .gitmodules 带有冲突标记（会报 bad config line 退出码 128）
-            python3 - << 'PYEOF'
-import re, subprocess
-try:
-    up_gitmodules = subprocess.check_output(['git', 'show', 'MERGE_HEAD:.gitmodules'], text=True)
-    res = re.sub(r'(\[submodule \"core/Clash\.Meta\"\][\s\S]*?url = )[^\n]+', r'\1https://github.com/ABOLUOmathh/mihomo.git', up_gitmodules)
-    res = re.sub(r'(\[submodule \"core/Clash\.Meta\"\][\s\S]*?branch = )[^\n]+', r'\1FlClashHX', res)
-    res = re.sub(r'git@github\.com:', r'https://github.com/', res)
-    with open('.gitmodules', 'w') as f:
-        f.write(res)
-    print("✅ .gitmodules 已自动校准为合法配置")
-except Exception as e:
-    print(f"ℹ️ 跳过 .gitmodules 自动校准: {e}")
-PYEOF
+            python3 tool/reconcile_gitmodules.py || true
             git add .gitmodules 2>/dev/null || true
 
             # 2. 自动接受子模块指针更新，避免 submodule 冲突阻止 commit
