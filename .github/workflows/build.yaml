@@ -105,6 +105,7 @@ jobs:
     name: Desktop ${{ matrix.platform }}
     if: (github.event_name == 'workflow_dispatch' || !github.event.repository.private) && !startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.continue-on-error || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -114,7 +115,8 @@ jobs:
           - platform: windows
             os: windows-2022
           - platform: macos
-            os: macos-latest
+            os: macos-15-intel
+            continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -328,6 +330,7 @@ jobs:
     # Releases publish where the release links point: the public repository.
     if: (github.repository == 'ABOLUOmathh/FlClashHX' || github.repository == 'chen08209/FlClash') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.continue-on-error || false }}
     strategy:
       matrix:
         include:
@@ -343,8 +346,9 @@ jobs:
             os: macos-15-intel
             arch: amd64
           - platform: macos
-            os: macos-latest
+            os: macos-14
             arch: arm64
+            continue-on-error: true
           - platform: windows
             os: windows-11-arm
             arch: arm64

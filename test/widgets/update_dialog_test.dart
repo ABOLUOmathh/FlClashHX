@@ -99,7 +99,7 @@ Future<void> tapCancel(WidgetTester tester) async {
 void main() {
   setUpAll(() {
     globalState.packageInfo = PackageInfo(
-      appName: 'FlClash',
+      appName: appName,
       packageName: 'com.follow.clashhx',
       version: _runningVersion,
       buildNumber: '1',
@@ -174,7 +174,7 @@ void main() {
   });
 
   group('a build that updates itself', () {
-    const asset = 'FlClash-0.8.96-android-arm64-v8a.apk';
+    final asset = '$appName-0.8.96-android-arm64-v8a.apk';
     final package = utf8.encode('package');
     final digest = sha256.convert(package).toString();
     late Directory home;
