@@ -124,13 +124,8 @@ jobs:
             echo "has_conflicts=true" >> $GITHUB_OUTPUT
             echo "⚠️ 存在冲突，自动处理特殊文件后提交冲突标记供 PR review"
 
-            # 1. 自动处理 .gitmodules：git 不允许 .gitmodules 带有冲突标记（会报 bad config line 退出码 128）
+            # 1. 自动处理 .gitmodules 与子模块冲突：解决语法冲突与指针冲突
             python3 tool/reconcile_gitmodules.py || true
-            git add .gitmodules 2>/dev/null || true
-
-            # 2. 自动接受子模块指针更新，避免 submodule 冲突阻止 commit
-            git checkout --theirs core/Clash.Meta 2>/dev/null || true
-            git add core/Clash.Meta 2>/dev/null || true
 
             # 将所有文件（含冲突标记）加入暂存并提交
             git add -A
