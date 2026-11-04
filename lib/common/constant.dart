@@ -10,7 +10,7 @@ import 'package:fl_clash/models/models.dart';
 import 'package:flutter/widgets.dart';
 
 const appName = 'FlClashHX';
-const appVersion = '0.9.2-hx.3';
+const appVersion = '0.9.3-hx.1';
 const appHelperService = 'FlClashHXHelperService';
 const coreManifestName = 'manifest.json';
 const browserUa =
@@ -22,14 +22,9 @@ const helperPort = 47890;
 const helperPortKey =
     'SYSTEM\\CurrentControlSet\\Services\\$appHelperService\\Runtime';
 const helperPortValue = 'Port';
-<<<<<<< HEAD
 const helperSocketPath = '/run/flclashhx/helper.sock';
+const helperUnitPath = '/etc/systemd/system/flclashhx-helper.service';
 const helperProtocolVersionHeader = 'x-flclashhx-helper-protocol';
-=======
-const helperSocketPath = '/run/flclash/helper.sock';
-const helperUnitPath = '/etc/systemd/system/flclash-helper.service';
-const helperProtocolVersionHeader = 'x-flclash-helper-protocol';
->>>>>>> be84736605527034689c95bf27828ff27d912c5e
 final helperProtocolVersion = Platform.isWindows ? '8' : '6';
 const maxTextScale = 1.4;
 const minTextScale = 0.8;
