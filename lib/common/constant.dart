@@ -7,7 +7,7 @@ import 'package:collection/collection.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/widgets.dart';
 
 const appName = 'FlClashHX';
 const appVersion = '0.9.2-hx.3';
@@ -22,8 +22,14 @@ const helperPort = 47890;
 const helperPortKey =
     'SYSTEM\\CurrentControlSet\\Services\\$appHelperService\\Runtime';
 const helperPortValue = 'Port';
+<<<<<<< HEAD
 const helperSocketPath = '/run/flclashhx/helper.sock';
 const helperProtocolVersionHeader = 'x-flclashhx-helper-protocol';
+=======
+const helperSocketPath = '/run/flclash/helper.sock';
+const helperUnitPath = '/etc/systemd/system/flclash-helper.service';
+const helperProtocolVersionHeader = 'x-flclash-helper-protocol';
+>>>>>>> be84736605527034689c95bf27828ff27d912c5e
 final helperProtocolVersion = Platform.isWindows ? '8' : '6';
 const maxTextScale = 1.4;
 const minTextScale = 0.8;
@@ -31,6 +37,10 @@ const minTextScale = 0.8;
 const watchExecution = false;
 
 const safeModeBuild = bool.fromEnvironment('SAFE_MODE');
+
+/// The bundled core has no MITM, so this stays off until one that has it ships.
+/// Not const so tests can cover both states.
+bool mitmFeature = const bool.fromEnvironment('FEATURE_MITM');
 
 const disclaimerVersion = 1;
 
@@ -86,8 +96,6 @@ const outboundIpTimeoutDuration = Duration(seconds: 6);
 Duration coreGuardFor(int timeout, {int budgetFactor = 2}) =>
     Duration(milliseconds: timeout * budgetFactor) + const Duration(seconds: 5);
 
-Duration probeGuardDuration(ProbeParams params) => coreGuardFor(params.timeout);
-
 /// Kept in step with serviceSweepBudgetFactor in core/service_check.go.
 const serviceSweepBudgetFactor = 6;
 
@@ -114,6 +122,11 @@ const profilesDirectoryName = 'profiles';
 const providersDirectoryName = 'providers';
 const proxiesProviderDirectoryName = 'proxies';
 const rulesProviderDirectoryName = 'rules';
+
+/// The Core reads the CA here, and map-local files only from [mitmResourcesDirectoryName].
+const mitmDirectoryName = 'mitm';
+const mitmModulesDirectoryName = 'modules';
+const mitmResourcesDirectoryName = 'resources';
 
 const localhost = '127.0.0.1';
 const clashConfigKey = 'clash_config';
@@ -150,6 +163,7 @@ const stringListEquality = ListEquality<String>();
 const intListEquality = ListEquality<int>();
 const ruleListEquality = ListEquality<Rule>();
 const scriptListEquality = ListEquality<Script>();
+const mitmModuleListEquality = ListEquality<MitmModule>();
 const profileListEquality = ListEquality<Profile>();
 const proxyGroupsEquality = ListEquality<ProxyGroup>();
 const customProxiesEquality = ListEquality<CustomProxy>();
