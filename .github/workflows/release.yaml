@@ -72,7 +72,7 @@ jobs:
           VERSION="${{ github.event.inputs.hx_version }}"
           TAG="v${VERSION}"
           git add lib/common/constant.dart
-          git commit -m "chore(release): bump version to ${VERSION}"
+          git commit -m "chore(release): bump version to ${VERSION}" --allow-empty
           git tag "${TAG}"
           git push origin main --tags
           echo "🚀 已推送 tag ${TAG}，build.yaml 将自动触发构建发布"
