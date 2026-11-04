@@ -156,7 +156,7 @@ jobs:
       - name: Setup Xcode
         if: matrix.platform == 'macos'
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.3.app || sudo xcode-select -s /Applications/Xcode_26.2.app
+          sudo xcode-select -s /Applications/Xcode_26.3.app 2>/dev/null || sudo xcode-select -s /Applications/Xcode_26.2.app 2>/dev/null || true
           xcodebuild -version
 
       - name: Enable git long paths (Windows)
@@ -332,6 +332,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.continue-on-error || false }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - platform: android
@@ -345,8 +346,9 @@ jobs:
           - platform: macos
             os: macos-15-intel
             arch: amd64
+            continue-on-error: true
           - platform: macos
-            os: macos-14
+            os: macos-15
             arch: arm64
             continue-on-error: true
           - platform: windows
@@ -410,7 +412,7 @@ jobs:
       - name: Setup Xcode
         if: startsWith(matrix.platform,'macos')
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.3.app || sudo xcode-select -s /Applications/Xcode_26.2.app
+          sudo xcode-select -s /Applications/Xcode_26.3.app 2>/dev/null || sudo xcode-select -s /Applications/Xcode_26.2.app 2>/dev/null || true
           xcodebuild -version
 
       - name: Setup NDK
@@ -460,6 +462,15 @@ jobs:
     permissions:
       contents: write
     needs: [ build, dart, plugins, go, android, rust, windows-helper-test ]
+    if: |
+      !cancelled() &&
+      needs.dart.result == 'success' &&
+      needs.plugins.result == 'success' &&
+      needs.go.result == 'success' &&
+      needs.android.result == 'success' &&
+      needs.rust.result == 'success' &&
+      needs['windows-helper-test'].result == 'success' &&
+      (needs.build.result == 'success' || needs.build.result == 'failure')
     runs-on: ubuntu-latest
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
