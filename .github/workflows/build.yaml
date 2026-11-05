@@ -551,8 +551,9 @@ jobs:
       - name: Patch release.md
         run: |
           touch release.md
-          version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          sed "s|VERSION|$version|g" ./.github/release_template.md >> release.md
+          tag="${{ github.ref_name }}"
+          pkg_version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' pubspec.yaml)
+          sed -e "s|TAG|$tag|g" -e "s|VERSION|$pkg_version|g" ./.github/release_template.md >> release.md
 
       - name: Generate sha256
         run: |
