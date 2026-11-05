@@ -434,6 +434,24 @@ jobs:
         if: matrix.platform == 'macos' && matrix.arch == 'amd64'
         run: plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist
 
+      # Pre-install and pin Rust 1.99.0 toolchain to prevent on-the-fly DNS lookup failures during native asset hooks
+      - name: Setup Rust toolchain
+        if: matrix.platform == 'macos' || matrix.platform == 'linux'
+        shell: bash
+        run: |
+          if command -v rustup >/dev/null 2>&1; then
+            for i in 1 2 3 4 5; do
+              echo "Attempt $i: Installing Rust 1.99.0 toolchain..."
+              if rustup toolchain install 1.99.0 --profile minimal; then
+                rustup default 1.99.0
+                echo "Rust 1.99.0 toolchain ready."
+                break
+              fi
+              echo "Failed to install Rust 1.99.0, retrying in 5 seconds..."
+              sleep 5
+            done
+          fi
+
       # The core embeds this bundle and FlClashHttpOverrides.trustCoreRoots loads it for Dart.
       # Pinned by hash, so a new bundle from https://curl.se/docs/caextract.html is a reviewed bump.
       - name: Fetch CA certificates
