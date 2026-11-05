@@ -10,7 +10,7 @@ import 'package:fl_clash/models/models.dart';
 import 'package:flutter/widgets.dart';
 
 const appName = 'FlClashHX';
-const appVersion = '0.9.3-hx.1';
+const appVersion = '0.9.3-hx.2';
 const appHelperService = 'FlClashHXHelperService';
 const coreManifestName = 'manifest.json';
 const browserUa =

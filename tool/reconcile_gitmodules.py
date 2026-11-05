@@ -41,18 +41,21 @@ def resolve_submodule_conflicts():
 
     for line in unmerged.splitlines():
         parts = line.split()
-        # Stage 3 is theirs (upstream)
-        if len(parts) >= 4 and parts[0] == '160000' and parts[2] == '3':
-            sha = parts[1]
+        if len(parts) >= 4 and parts[0] == '160000':
             path = parts[3]
-            try:
-                subprocess.run(
-                    ['git', 'update-index', '--cacheinfo', f'160000,{sha},{path}'],
-                    check=True,
-                )
-                print(f"✅ Resolved submodule '{path}' to upstream commit {sha}")
-            except Exception as e:
-                print(f"⚠️ Failed to update index for submodule {path}: {e}")
+            # For our custom core submodule, keep OURS (stage 2)
+            # For other upstream submodules (e.g., plugins/prism_ui), take upstream (stage 3)
+            target_stage = '2' if path == 'core/Clash.Meta' else '3'
+            if parts[2] == target_stage:
+                sha = parts[1]
+                try:
+                    subprocess.run(
+                        ['git', 'update-index', '--cacheinfo', f'160000,{sha},{path}'],
+                        check=True,
+                    )
+                    print(f"✅ Resolved submodule '{path}' to stage {target_stage} commit {sha}")
+                except Exception as e:
+                    print(f"⚠️ Failed to update index for submodule {path}: {e}")
 
 def main():
     reconcile_gitmodules()
