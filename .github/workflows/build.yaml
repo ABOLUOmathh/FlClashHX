@@ -558,6 +558,15 @@ jobs:
       - name: Generate sha256
         run: |
           cd ./dist
+          tag="${{ github.ref_name }}"
+          version="${tag#v}"
+          pkg_version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' ../pubspec.yaml)
+          if [ -n "$version" ] && [ "$version" != "$pkg_version" ]; then
+            for f in FlClashHX-${pkg_version}-*; do
+              [ -f "$f" ] || continue
+              cp -p "$f" "${f//FlClashHX-${pkg_version}-/FlClashHX-${version}-}"
+            done
+          fi
           sha256sum ./* > SHA256SUMS
 
       - name: Release
