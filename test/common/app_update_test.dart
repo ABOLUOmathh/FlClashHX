@@ -51,9 +51,13 @@ void main() {
     });
   });
 
-  test('releaseAssetName drops the tag prefix', () {
+  test('releaseAssetName drops the tag prefix and -hx suffix', () {
     expect(
       releaseAssetName('v0.9.3', 'android-arm64-v8a.apk'),
+      '$appName-0.9.3-android-arm64-v8a.apk',
+    );
+    expect(
+      releaseAssetName('v0.9.3-hx.1', 'android-arm64-v8a.apk'),
       '$appName-0.9.3-android-arm64-v8a.apk',
     );
   });

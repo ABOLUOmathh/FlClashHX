@@ -55,7 +55,10 @@ String? selfUpdateAssetSuffix(Abi abi, {required bool windowsInstalled}) {
 }
 
 String releaseAssetName(String tag, String suffix) {
-  final version = tag.startsWith('v') ? tag.substring(1) : tag;
+  var version = tag.startsWith('v') ? tag.substring(1) : tag;
+  if (version.contains('-hx')) {
+    version = version.split('-hx')[0];
+  }
   return '$appName-$version-$suffix';
 }
 
