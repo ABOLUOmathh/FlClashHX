@@ -69,17 +69,39 @@ extension FileExt on File {
 
 extension FileSystemEntityExt on FileSystemEntity {
   Future<void> safeDelete({bool recursive = false}) async {
-    if (!await exists()) {
+    try {
+      if (!await exists()) {
+        return;
+      }
+      await delete(recursive: recursive);
+    } on PathNotFoundException {
       return;
+    } on FileSystemException catch (e) {
+      if (e.osError?.errorCode == 2) {
+        return;
+      }
+      rethrow;
     }
-    await delete(recursive: recursive);
   }
 }
 
 Future<void> safeDeletePath(String path) async {
-  final entity = switch (FileSystemEntity.typeSync(path)) {
-    FileSystemEntityType.directory => Directory(path),
-    _ => File(path),
-  };
-  await entity.safeDelete(recursive: true);
+  try {
+    final type = FileSystemEntity.typeSync(path);
+    if (type == FileSystemEntityType.notFound) {
+      return;
+    }
+    final entity = switch (type) {
+      FileSystemEntityType.directory => Directory(path),
+      _ => File(path),
+    };
+    await entity.safeDelete(recursive: true);
+  } on PathNotFoundException {
+    return;
+  } on FileSystemException catch (e) {
+    if (e.osError?.errorCode == 2) {
+      return;
+    }
+    rethrow;
+  }
 }
