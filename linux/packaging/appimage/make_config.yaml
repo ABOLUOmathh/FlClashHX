@@ -21,7 +21,10 @@ categories:
   - Network
 
 startup_notify: true
+<<<<<<< HEAD
 
 startup_wm_class: com.follow.clashhx
 
 include: []
+=======
+>>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
