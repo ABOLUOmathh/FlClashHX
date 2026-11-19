@@ -11,6 +11,7 @@ essential: false
 icon: ./assets/images/icon.png
 
 dependencies:
+  - libayatana-appindicator3-1
   - libsecret-1-0
 
 # The Helper unit is written on demand by the app, not at install time, so only
@@ -40,8 +41,5 @@ categories:
   - Network
 
 startup_notify: true
-<<<<<<< HEAD
 
 startup_wm_class: com.follow.clashhx
-=======
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659

@@ -45,10 +45,6 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-<<<<<<< HEAD
-	<string>FlClashHX needs location access to detect WiFi network name for connectivity features.</string>
-=======
 	<string>$(PRODUCT_NAME) needs location access to detect WiFi network name for connectivity features.</string>
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
 </dict>
 </plist>

@@ -25,11 +25,11 @@ void main() {
       for (final arch in [ReleaseArch.amd64, ReleaseArch.arm64]) {
         expect(
           name(ReleaseOs.windows, arch, 'exe', form: ReleaseForm.setup),
-          'FlClash-dev-0.9.4-windows-${arch.name}-setup.exe',
+          '$releaseFilePrefix-dev-0.9.4-windows-${arch.name}-setup.exe',
         );
         expect(
           name(ReleaseOs.windows, arch, 'zip', form: ReleaseForm.portable),
-          'FlClash-dev-0.9.4-windows-${arch.name}-portable.zip',
+          '$releaseFilePrefix-dev-0.9.4-windows-${arch.name}-portable.zip',
         );
       }
     });
@@ -38,12 +38,12 @@ void main() {
       for (final arch in [ReleaseArch.amd64, ReleaseArch.arm64]) {
         expect(
           name(ReleaseOs.macos, arch, 'dmg'),
-          'FlClash-dev-0.9.4-macos-${arch.name}.dmg',
+          '$releaseFilePrefix-dev-0.9.4-macos-${arch.name}.dmg',
         );
         for (final extension in ['deb', 'rpm', 'AppImage']) {
           expect(
             name(ReleaseOs.linux, arch, extension),
-            'FlClash-dev-0.9.4-linux-${arch.name}.$extension',
+            '$releaseFilePrefix-dev-0.9.4-linux-${arch.name}.$extension',
           );
         }
       }
@@ -56,10 +56,10 @@ void main() {
             name(ReleaseOs.android, arch, 'apk'),
         ],
         [
-          'FlClash-dev-0.9.4-android-amd64.apk',
-          'FlClash-dev-0.9.4-android-arm64.apk',
-          'FlClash-dev-0.9.4-android-armv7.apk',
-          'FlClash-dev-0.9.4-android-universal.apk',
+          '$releaseFilePrefix-dev-0.9.4-android-amd64.apk',
+          '$releaseFilePrefix-dev-0.9.4-android-arm64.apk',
+          '$releaseFilePrefix-dev-0.9.4-android-armv7.apk',
+          '$releaseFilePrefix-dev-0.9.4-android-universal.apk',
         ],
       );
     });
@@ -74,7 +74,7 @@ void main() {
           line: ReleaseLine.rs,
           version: releaseVersionOfTag('v0.9.4-pre.2'),
         ),
-        'FlClash-rs-0.9.4-pre.2-windows-amd64-setup.exe',
+        '$releaseFilePrefix-rs-0.9.4-pre.2-windows-amd64-setup.exe',
       );
     });
 
@@ -88,7 +88,7 @@ void main() {
       expect(version, '0.9.4-nightly.20261106.394f5bb');
       expect(
         name(ReleaseOs.linux, ReleaseArch.amd64, 'AppImage', version: version),
-        'FlClash-dev-0.9.4-nightly.20261106.394f5bb-linux-amd64.AppImage',
+        '$releaseFilePrefix-dev-0.9.4-nightly.20261106.394f5bb-linux-amd64.AppImage',
       );
     });
 
@@ -113,7 +113,7 @@ void main() {
   test('the checksum file is named per line and version', () {
     expect(
       releaseChecksumsName(ReleaseLine.rs, '0.9.4-pre.2'),
-      'FlClash-rs-0.9.4-pre.2-SHA256SUMS',
+      '$releaseFilePrefix-rs-0.9.4-pre.2-SHA256SUMS',
     );
   });
 }

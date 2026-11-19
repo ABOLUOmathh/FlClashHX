@@ -70,14 +70,6 @@ SelfUpdateAsset? selfUpdateAssetFor(Abi abi, {required bool windowsInstalled}) {
   };
 }
 
-<<<<<<< HEAD
-String releaseAssetName(String tag, String suffix) {
-  var version = tag.startsWith('v') ? tag.substring(1) : tag;
-  if (version.contains('-hx')) {
-    version = version.split('-hx')[0];
-  }
-  return '$appName-$version-$suffix';
-=======
 String updateAssetName(String tag, SelfUpdateAsset asset) {
   return releaseAssetName(
     line: appReleaseLine,
@@ -91,7 +83,6 @@ String updateAssetName(String tag, SelfUpdateAsset asset) {
 
 String updateChecksumsName(String tag) {
   return releaseChecksumsName(appReleaseLine, releaseVersionOfTag(tag));
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
 }
 
 Uri releaseAssetUri(String tag, String name) {

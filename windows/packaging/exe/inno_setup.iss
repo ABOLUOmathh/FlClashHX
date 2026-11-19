@@ -62,21 +62,12 @@ var
   AppDir: String;
   ResultCode: Integer;
 begin
-<<<<<<< HEAD
-  Processes := ['FlClashHX.exe', 'FlClashHXCore.exe', 'FlClashHXHelperService.exe'];
-
-  for i := 0 to GetArrayLength(Processes)-1 do
-  begin
-    Exec('taskkill', '/f /im ' + Processes[i], '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  end;
-=======
   AppDir := AddBackslash(ExpandConstant('{app}'));
   StringChangeEx(AppDir, '''', '''''', True);
   Exec('powershell.exe',
-    '-NoProfile -NonInteractive -Command "Get-Process -Name FlClash,FlClashCore,FlClashHelperService -ErrorAction SilentlyContinue | ' +
+    '-NoProfile -NonInteractive -Command "Get-Process -Name FlClashHX,FlClashHXCore,FlClashHXHelperService -ErrorAction SilentlyContinue | ' +
     'Where-Object { $_.Path -and $_.Path.StartsWith(''' + AppDir + ''', [StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
 end;
 
 procedure UnregisterHelperService;

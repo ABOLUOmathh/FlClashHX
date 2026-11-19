@@ -28,12 +28,7 @@
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
-<<<<<<< HEAD
-		F5131FDD2EF0F1A500A1748D /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = F5131FDC2EF0F1A500A1748D /* LaunchAtLogin */; };
 		F51BB7CB2EF0267400E05D67 /* FlClashHXCore in Copy Core */ = {isa = PBXBuildFile; fileRef = F51BB7CA2EF0267400E05D67 /* FlClashHXCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-=======
-		F51BB7CB2EF0267400E05D67 /* FlClashCore in Copy Core */ = {isa = PBXBuildFile; fileRef = F51BB7CA2EF0267400E05D67 /* FlClashCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */

@@ -175,11 +175,7 @@ void main() {
   });
 
   group('a build that updates itself', () {
-<<<<<<< HEAD
-    final asset = '$appName-0.8.96-android-arm64-v8a.apk';
-=======
-    const asset = 'FlClash-dev-0.8.96-android-arm64.apk';
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
+    final asset = '$releaseFilePrefix-dev-0.8.96-android-arm64.apk';
     final package = utf8.encode('package');
     final digest = sha256.convert(package).toString();
     late Directory home;

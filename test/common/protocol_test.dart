@@ -19,11 +19,7 @@ void main() {
         plan.desktopEntry,
         '[Desktop Entry]\n'
         'Type=Application\n'
-<<<<<<< HEAD
-        'Name=FlClashHX\n'
-=======
         'Name=$appName\n'
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
         'NoDisplay=true\n'
         'Exec="/home/me/Apps/FlClash.AppImage" %u\n'
         'MimeType=x-scheme-handler/clash;x-scheme-handler/clashmeta;'

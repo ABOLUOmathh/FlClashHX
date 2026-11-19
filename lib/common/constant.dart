@@ -10,7 +10,7 @@ import 'package:fl_clash/models/models.dart';
 import 'package:flutter/widgets.dart';
 
 const appName = 'FlClashHX';
-const appVersion = '0.9.3-hx.2';
+const appVersion = '0.9.4-hx.1';
 const appHelperService = 'FlClashHXHelperService';
 const coreManifestName = 'manifest.json';
 const browserUa =
@@ -135,12 +135,8 @@ const configKey = 'config';
 const systemDnsRecordKey = 'system_dns_record';
 const bootRecordKey = 'boot_record';
 const appliedConfigMd5Key = 'applied_config_md5';
-<<<<<<< HEAD
 const defaultSystemDnsFallback = '223.5.5.5';
 const repository = 'ABOLUOmathh/FlClashHX';
-=======
-const repository = 'chen08209/FlClash';
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
 const maxMobileWidth = 600;
 const maxLaptopWidth = 840;
 const defaultTestUrl = 'https://www.gstatic.com/generate_204';

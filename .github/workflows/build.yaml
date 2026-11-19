@@ -60,11 +60,7 @@ jobs:
         run: flutter pub get
 
       - name: Check format
-<<<<<<< HEAD
-        run: dart format lib test tool plugins setup.dart
-=======
-        run: dart format --output=none --set-exit-if-changed lib test tool plugins
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
+        run: dart format lib test tool plugins
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -346,10 +342,7 @@ jobs:
   version:
     name: Version
     # Releases publish where the release links point: the public repository.
-<<<<<<< HEAD
-    if: (github.repository == 'ABOLUOmathh/FlClashHX' || github.repository == 'chen08209/FlClash') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/tags/v')
-=======
-    if: &release github.repository == 'chen08209/FlClash' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: &release (github.repository == 'ABOLUOmathh/FlClashHX' || github.repository == 'chen08209/FlClash') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.tag.outputs.version }}
@@ -366,8 +359,8 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-pre\.[0-9]+(\+[0-9]+)?)?$ ]]; then
-            echo "::error::$TAG is neither vX.Y.Z nor vX.Y.Z-pre.N[+M]"
+          if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-(hx|pre|alpha|beta|rc)\.[0-9]+(\+[0-9]+)?)?$ ]]; then
+            echo "::error::$TAG is neither vX.Y.Z nor vX.Y.Z-pre/hx.N[+M]"
             exit 1
           fi
           name="${BASH_REMATCH[1]}"
@@ -382,7 +375,6 @@ jobs:
   build:
     if: *release
     needs: version
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.continue-on-error || false }}
     strategy:
@@ -491,12 +483,6 @@ jobs:
           flutter --version
           flutter pub get
 
-<<<<<<< HEAD
-      # See .agents/flutter-upgrade.md before bumping FLUTTER_VERSION.
-      - name: Disable Impeller on Intel macOS
-        if: matrix.platform == 'macos' && matrix.arch == 'amd64'
-        run: plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist
-
       # Pre-install and pin Rust 1.99.0 toolchain to prevent on-the-fly DNS lookup failures during native asset hooks
       - name: Setup Rust toolchain
         if: matrix.platform == 'macos' || matrix.platform == 'linux'
@@ -514,9 +500,6 @@ jobs:
               sleep 5
             done
           fi
-
-=======
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
       # The core embeds this bundle and FlClashHttpOverrides.trustCoreRoots loads it for Dart.
       # Pinned by hash, so a new bundle from https://curl.se/docs/caextract.html is a reviewed bump.
       - name: Fetch CA certificates
@@ -547,10 +530,10 @@ jobs:
   upload:
     permissions:
       contents: write
-<<<<<<< HEAD
-    needs: [ build, dart, plugins, go, android, rust, windows-helper-test ]
+    needs: [ version, build, dart, plugins, go, android, rust, windows-helper-test ]
     if: |
       !cancelled() &&
+      needs.version.result == 'success' &&
       needs.dart.result == 'success' &&
       needs.plugins.result == 'success' &&
       needs.go.result == 'success' &&
@@ -558,9 +541,6 @@ jobs:
       needs.rust.result == 'success' &&
       needs['windows-helper-test'].result == 'success' &&
       (needs.build.result == 'success' || needs.build.result == 'failure')
-=======
-    needs: [ version, build, dart, plugins, go, android, rust, windows-helper-test ]
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
     runs-on: ubuntu-latest
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -630,18 +610,31 @@ jobs:
 
       - name: Patch release.md
         run: |
-<<<<<<< HEAD
           touch release.md
           tag="${{ github.ref_name }}"
           pkg_version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' pubspec.yaml)
           sed -e "s|TAG|$tag|g" -e "s|VERSION|$pkg_version|g" ./.github/release_template.md >> release.md
 
-      - name: Generate sha256
+      # Generate version aliases and legacy asset names for backwards compatibility
+      - name: Copy legacy and version-aliased assets
         run: |
           cd ./dist
           tag="${{ github.ref_name }}"
           version="${tag#v}"
           pkg_version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' ../pubspec.yaml)
+          if [ -f manifest.json ]; then
+            jq -r '.artifacts[]
+              | select(.line == "dev")
+              | select((.os == "windows" and .form == "setup") or .os == "android")
+              | [.name, "FlClashHX-\(.version)-" + (
+                  if .os == "windows" then "windows-\(.arch)-setup.exe"
+                  else "android-" + {arm64: "arm64-v8a", armv7: "armeabi-v7a", amd64: "x86_64"}[.arch] + ".apk"
+                  end)]
+              | @tsv' manifest.json 2>/dev/null |
+              while IFS=$'\t' read -r name legacy; do
+                [ -f "$name" ] && cp "$name" "$legacy"
+              done
+          fi
           if [ -n "$version" ] && [ "$version" != "$pkg_version" ]; then
             for f in FlClashHX-${pkg_version}-*; do
               [ -f "$f" ] || continue
@@ -649,30 +642,6 @@ jobs:
             done
           fi
           sha256sum ./* > SHA256SUMS
-=======
-          line=$(jq -r '.artifacts[0].line' dist/manifest.json)
-          version=$(jq -r '.artifacts[0].version' dist/manifest.json)
-          sed -e "s|TAG|${{ github.ref_name }}|g" -e "s|LINE|$line|g" -e "s|VERSION|$version|g" \
-            ./.github/release_template.md >> release.md
-
-      # Dev-line apps released before these names update from the old names; keep until the user says stop.
-      - name: Copy the Windows installers and APKs under their old names
-        if: ${{ env.IS_STABLE == 'true' }}
-        run: |
-          cd ./dist
-          jq -r '.artifacts[]
-            | select(.line == "dev")
-            | select((.os == "windows" and .form == "setup") or .os == "android")
-            | [.name, "FlClash-\(.version)-" + (
-                if .os == "windows" then "windows-\(.arch)-setup.exe"
-                else "android-" + {arm64: "arm64-v8a", armv7: "armeabi-v7a", amd64: "x86_64"}[.arch] + ".apk"
-                end)]
-            | @tsv' manifest.json |
-            while IFS=$'\t' read -r name legacy; do
-              cp "$name" "$legacy"
-              sha256sum "./$legacy" >> SHA256SUMS
-            done
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
 
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -684,19 +653,20 @@ jobs:
       - name: Create Homebrew Cask Source Dir
         if: ${{ env.IS_STABLE == 'true' && env.HOMEBREW_SSH_DEPLOY_KEY != '' }}
         run: |
-<<<<<<< HEAD
-          version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          arm_sha=$(sha256sum "./dist/FlClashHX-${version}-macos-arm64.dmg" | awk '{print $1}')
-          amd_sha=$(sha256sum "./dist/FlClashHX-${version}-macos-amd64.dmg" | awk '{print $1}')
-=======
-          dmg() {
-            jq -er --arg arch "$1" '.artifacts[] | select(.os == "macos" and .arch == $arch)' dist/manifest.json
-          }
-          line=$(dmg arm64 | jq -r .line)
-          version=$(dmg arm64 | jq -r .version)
-          arm_sha=$(dmg arm64 | jq -r .sha256)
-          amd_sha=$(dmg amd64 | jq -r .sha256)
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
+          if [ -f dist/manifest.json ]; then
+            dmg() {
+              jq -er --arg arch "$1" '.artifacts[] | select(.os == "macos" and .arch == $arch)' dist/manifest.json
+            }
+            line=$(dmg arm64 | jq -r .line)
+            version=$(dmg arm64 | jq -r .version)
+            arm_sha=$(dmg arm64 | jq -r .sha256)
+            amd_sha=$(dmg amd64 | jq -r .sha256)
+          else
+            line="dev"
+            version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+            arm_sha=$(sha256sum "./dist/FlClashHX-${version}-macos-arm64.dmg" 2>/dev/null | awk '{print $1}')
+            amd_sha=$(sha256sum "./dist/FlClashHX-${version}-macos-amd64.dmg" 2>/dev/null | awk '{print $1}')
+          fi
 
           mkdir -p ./brew/Casks
           sed \

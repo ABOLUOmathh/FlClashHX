@@ -33,11 +33,7 @@ class LinuxProtocolRegistrationPlan {
   String get desktopEntry => [
     '[Desktop Entry]',
     'Type=Application',
-<<<<<<< HEAD
-    'Name=FlClashHX',
-=======
     'Name=$appName',
->>>>>>> 89791d7c11978bf9b580ba71bffcb00506a17659
     'NoDisplay=true',
     'Exec=$exec',
     'MimeType=${mimeTypes.join(';')};',

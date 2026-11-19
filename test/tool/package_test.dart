@@ -186,25 +186,25 @@ hooks:
 
     expect(
       names(ReleaseOs.windows, ['exe', 'zip'], arch: ReleaseArch.arm64),
-      'FlClash-rs-0.9.4-pre.2-windows-arm64-setup.exe '
-      'FlClash-rs-0.9.4-pre.2-windows-arm64-portable.zip',
+      '$releaseFilePrefix-rs-0.9.4-pre.2-windows-arm64-setup.exe '
+      '$releaseFilePrefix-rs-0.9.4-pre.2-windows-arm64-portable.zip',
     );
     expect(
       names(ReleaseOs.linux, ['deb', 'rpm', 'appimage']),
-      'FlClash-rs-0.9.4-pre.2-linux-amd64.deb '
-      'FlClash-rs-0.9.4-pre.2-linux-amd64.rpm '
-      'FlClash-rs-0.9.4-pre.2-linux-amd64.AppImage',
+      '$releaseFilePrefix-rs-0.9.4-pre.2-linux-amd64.deb '
+      '$releaseFilePrefix-rs-0.9.4-pre.2-linux-amd64.rpm '
+      '$releaseFilePrefix-rs-0.9.4-pre.2-linux-amd64.AppImage',
     );
     expect(
       names(ReleaseOs.macos, ['dmg'], arch: ReleaseArch.arm64),
-      'FlClash-rs-0.9.4-pre.2-macos-arm64.dmg',
+      '$releaseFilePrefix-rs-0.9.4-pre.2-macos-arm64.dmg',
     );
     expect(
       names(ReleaseOs.android, ['apk']),
-      'FlClash-rs-0.9.4-pre.2-android-arm64.apk '
-      'FlClash-rs-0.9.4-pre.2-android-armv7.apk '
-      'FlClash-rs-0.9.4-pre.2-android-amd64.apk '
-      'FlClash-rs-0.9.4-pre.2-android-universal.apk',
+      '$releaseFilePrefix-rs-0.9.4-pre.2-android-arm64.apk '
+      '$releaseFilePrefix-rs-0.9.4-pre.2-android-armv7.apk '
+      '$releaseFilePrefix-rs-0.9.4-pre.2-android-amd64.apk '
+      '$releaseFilePrefix-rs-0.9.4-pre.2-android-universal.apk',
     );
     expect(() => names(ReleaseOs.macos, ['deb']), throwsA(isA<PackageError>()));
   });
@@ -379,7 +379,7 @@ hooks:
       );
       final checksums = writeManifest(dir, [entry]);
 
-      expect(checksums, 'FlClash-rs-0.9.4-SHA256SUMS');
+      expect(checksums, '$releaseFilePrefix-rs-0.9.4-SHA256SUMS');
       expect(
         File(p.join(dir, checksums)).readAsStringSync(),
         '${sha256.convert(utf8.encode(entry.name))}  ${entry.name}\n',
@@ -390,7 +390,7 @@ hooks:
       expect(json['checksums'], checksums);
       expect(json['artifacts'], [
         {
-          'name': 'FlClash-rs-0.9.4-linux-amd64.deb',
+          'name': '$releaseFilePrefix-rs-0.9.4-linux-amd64.deb',
           'sha256': entry.sha256,
           'size': entry.name.length,
           'line': 'rs',
@@ -418,20 +418,20 @@ hooks:
       final checksums = await mergeManifests([linux, macos], out);
 
       expect(readManifest(out).map((entry) => entry.name), [
-        'FlClash-rs-0.9.4-linux-amd64.deb',
-        'FlClash-rs-0.9.4-macos-arm64.dmg',
+        '$releaseFilePrefix-rs-0.9.4-linux-amd64.deb',
+        '$releaseFilePrefix-rs-0.9.4-macos-arm64.dmg',
       ]);
       expect(
         File(
           p.join(out, checksums),
         ).readAsLinesSync().map((l) => l.split('  ').last),
         [
-          'FlClash-rs-0.9.4-linux-amd64.deb',
-          'FlClash-rs-0.9.4-macos-arm64.dmg',
+          '$releaseFilePrefix-rs-0.9.4-linux-amd64.deb',
+          '$releaseFilePrefix-rs-0.9.4-macos-arm64.dmg',
         ],
       );
       expect(
-        File(p.join(out, 'FlClash-rs-0.9.4-macos-arm64.dmg')).existsSync(),
+        File(p.join(out, '$releaseFilePrefix-rs-0.9.4-macos-arm64.dmg')).existsSync(),
         isTrue,
       );
     });
