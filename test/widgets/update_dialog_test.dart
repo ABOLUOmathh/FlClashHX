@@ -175,7 +175,7 @@ void main() {
   });
 
   group('a build that updates itself', () {
-    final asset = '$releaseFilePrefix-dev-0.8.96-android-arm64.apk';
+    const asset = '$releaseFilePrefix-dev-0.8.96-android-arm64.apk';
     final package = utf8.encode('package');
     final digest = sha256.convert(package).toString();
     late Directory home;

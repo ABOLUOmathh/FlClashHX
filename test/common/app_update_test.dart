@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:fl_clash/common/app_update.dart';
-import 'package:fl_clash/common/constant.dart';
 import 'package:fl_clash/common/release_asset.dart';
 import 'package:flutter_test/flutter_test.dart';
 
