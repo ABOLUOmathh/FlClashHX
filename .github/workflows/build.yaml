@@ -621,8 +621,10 @@ jobs:
           cd ./dist
           tag="${{ github.ref_name }}"
           version="${tag#v}"
+          base_version="${version%%-*}"
           pkg_version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' ../pubspec.yaml)
           if [ -f manifest.json ]; then
+            # Full version names (e.g. FlClashHX-0.9.4-hx.1-android-arm64-v8a.apk)
             jq -r '.artifacts[]
               | select(.line == "dev")
               | select((.os == "windows" and .form == "setup") or .os == "android")
@@ -634,12 +636,22 @@ jobs:
               while IFS=$'\t' read -r name legacy; do
                 [ -f "$name" ] && cp "$name" "$legacy"
               done
-          fi
-          if [ -n "$version" ] && [ "$version" != "$pkg_version" ]; then
-            for f in FlClashHX-${pkg_version}-*; do
-              [ -f "$f" ] || continue
-              cp -p "$f" "${f//FlClashHX-${pkg_version}-/FlClashHX-${version}-}"
-            done
+
+            # Base version names without -hx suffix (e.g. FlClashHX-0.9.4-android-arm64-v8a.apk)
+            # Required for in-app updates from older FlClashHX clients (v0.9.3 and earlier)
+            if [ -n "$base_version" ] && [ "$base_version" != "$version" ]; then
+              jq -r --arg base "$base_version" '.artifacts[]
+                | select(.line == "dev")
+                | select((.os == "windows" and .form == "setup") or .os == "android")
+                | [.name, "FlClashHX-\($base)-" + (
+                    if .os == "windows" then "windows-\(.arch)-setup.exe"
+                    else "android-" + {arm64: "arm64-v8a", armv7: "armeabi-v7a", amd64: "x86_64"}[.arch] + ".apk"
+                    end)]
+                | @tsv' manifest.json 2>/dev/null |
+                while IFS=$'\t' read -r name legacy; do
+                  [ -f "$name" ] && cp "$name" "$legacy"
+                done
+            fi
           fi
           sha256sum ./* > SHA256SUMS
 
