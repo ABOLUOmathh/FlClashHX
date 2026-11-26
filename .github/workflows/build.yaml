@@ -394,7 +394,7 @@ jobs:
             arch: amd64
             continue-on-error: true
           - platform: macos
-            os: macos-15
+            os: macos-latest
             arch: arm64
             continue-on-error: true
           - platform: windows
