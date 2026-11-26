@@ -633,7 +633,9 @@ jobs:
                   end)]
               | @tsv' manifest.json 2>/dev/null |
               while IFS=$'\t' read -r name legacy; do
-                [ -f "$name" ] && cp "$name" "$legacy"
+                if [ -f "$name" ] && [ "$name" != "$legacy" ]; then
+                  cp "$name" "$legacy"
+                fi
               done
 
             dev_files=(FlClashHX-dev-"${version}"-*)
@@ -652,7 +654,9 @@ jobs:
                     end)]
                 | @tsv' manifest.json 2>/dev/null |
                 while IFS=$'\t' read -r name legacy; do
-                  [ -f "$name" ] && [ "$name" != "$legacy" ] && cp "$name" "$legacy"
+                  if [ -f "$name" ] && [ "$name" != "$legacy" ]; then
+                    cp "$name" "$legacy"
+                  fi
                 done
             done
           fi
