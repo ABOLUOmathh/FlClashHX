@@ -8,8 +8,6 @@ import 'src/changelog/models.dart';
 import 'src/changelog/render.dart';
 import 'src/changelog/verify.dart';
 
-const _repository = 'ABOLUOmathh/FlClashHX';
-
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption('root', help: 'Repository root, defaults to the cwd.');
@@ -111,7 +109,7 @@ int _build(String root, ArgResults command) {
 int _render(String root, ArgResults command) {
   final rest = command.rest;
   if (rest.isEmpty) {
-    _fail('render needs a target: release or telegram');
+    _fail('render needs a target: release');
   }
   final changelog = _readData(root);
   if (changelog.versions.isEmpty) {
@@ -127,14 +125,6 @@ int _render(String root, ArgResults command) {
 
   final output = switch (rest.first) {
     'release' => renderRelease(version),
-    // Only stable builds pass --tag, and only they get a release page; a
-    // prerelease caption already links its workflow run.
-    'telegram' => renderTelegram(
-      version,
-      moreUrl: tag == null
-          ? null
-          : 'https://github.com/$_repository/releases/tag/$tag',
-    ),
     _ => _fail('Unknown render target: ${rest.first}'),
   };
 
@@ -213,7 +203,7 @@ Commands:
   release --version X   Rewrite CHANGELOG.md and changelog.json.
   build [--unreleased]  Rewrite changelog.json only.
   markdown              Rewrite CHANGELOG.md from changelog.json.
-  render <release|telegram> [--tag vX] [--out file]
+  render release [--tag vX] [--out file]
   verify                Check the committed changelog against git.
 
 ${parser.usage}''';

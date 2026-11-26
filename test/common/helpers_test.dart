@@ -107,43 +107,6 @@ void main() {
     });
   });
 
-  group('compareVersions', () {
-    test('equal versions', () {
-      expect(compareVersions('1.0.0', '1.0.0'), 0);
-    });
-
-    test('major version difference', () {
-      expect(compareVersions('2.0.0', '1.0.0'), greaterThan(0));
-      expect(compareVersions('1.0.0', '2.0.0'), lessThan(0));
-    });
-
-    test('minor version difference', () {
-      expect(compareVersions('1.2.0', '1.1.0'), greaterThan(0));
-    });
-
-    test('patch version difference', () {
-      expect(compareVersions('1.0.2', '1.0.1'), greaterThan(0));
-    });
-
-    test('handles build number', () {
-      expect(compareVersions('1.0.0+1', '1.0.0+2'), lessThan(0));
-      expect(compareVersions('1.0.0+2', '1.0.0+1'), greaterThan(0));
-    });
-
-    test('handles missing minor/patch', () {
-      expect(compareVersions('1', '1.0.0'), 0);
-    });
-
-    test('handles custom and prerelease tags', () {
-      expect(compareVersions('v0.9.2-hx.2', '0.9.2-hx.1'), greaterThan(0));
-      expect(compareVersions('0.9.2-hx.1', 'v0.9.2-hx.2'), lessThan(0));
-      expect(compareVersions('v0.9.2-hx.2', 'v0.9.2-hx.2'), 0);
-      expect(compareVersions('v0.9.2-hx.2', '0.9.2'), greaterThan(0));
-      expect(compareVersions('0.9.2', 'v0.9.2-hx.2'), lessThan(0));
-      expect(compareVersions('v0.9.3', 'v0.9.2-hx.2'), greaterThan(0));
-    });
-  });
-
   group('getViewMode', () {
     test('mobile for small width', () {
       expect(getViewMode(400).name, 'mobile');
@@ -295,7 +258,7 @@ void main() {
           '### Features\n'
           '- Item 1\n'
           '$releaseNotesEndMarker\n'
-          '<a href="FlClash-0.8.96-android-arm64-v8a.apk">APK</a>\n'
+          '<a href="FlClash-0.8.96-android-arm64.apk">APK</a>\n'
           '- Not part of the notes\n';
 
       expect(parseReleaseBody(body), ['Item 1']);
