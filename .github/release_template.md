@@ -18,18 +18,18 @@
         <tr>
         <td>Android</td>
             <td>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-android-arm64-v8a.apk"><img src="https://img.shields.io/badge/APK-ARMv8-168039.svg?logo=android"></a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-android-armeabi-v7a.apk"><img src="https://img.shields.io/badge/APK-ARMv7-45bf55.svg?logo=android"></a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-android-x86_64.apk"><img src="https://img.shields.io/badge/APK-x64-96ed89.svg?logo=android"></a>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-android-arm64.apk"><img src="https://img.shields.io/badge/APK-ARMv8-168039.svg?logo=android"></a><br>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-android-armv7.apk"><img src="https://img.shields.io/badge/APK-ARMv7-45bf55.svg?logo=android"></a><br>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-android-amd64.apk"><img src="https://img.shields.io/badge/APK-x64-96ed89.svg?logo=android"></a>
             </td>
         </tr>
         <tr>
             <td>Windows</td>
             <td>
                 <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-windows-amd64-setup.exe"><img src="https://img.shields.io/badge/Setup-x64-2d7d9a.svg?logo=windows"></a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-windows-amd64.zip"><img src="https://img.shields.io/badge/Portable-x64-67b7d1.svg?logo=windows"></a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-windows-arm64-setup.exe"><img src="https://img.shields.io/badge/Setup-arm64-2d7d9a.svg?logo=windows"></a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-windows-arm64.zip"><img src="https://img.shields.io/badge/Portable-arm64-67b7d1.svg?logo=windows"></a>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-windows-amd64-portable.zip"><img src="https://img.shields.io/badge/Portable-x64-67b7d1.svg?logo=windows"></a><br>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-windows-arm64-setup.exe"><img src="https://img.shields.io/badge/Setup-ARM64-2d7d9a.svg?logo=windows"></a><br>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-windows-arm64-portable.zip"><img src="https://img.shields.io/badge/Portable-ARM64-67b7d1.svg?logo=windows"></a>
             </td>
         </tr>
         <tr>
@@ -45,9 +45,9 @@
                 <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-amd64.AppImage"><img src="https://img.shields.io/badge/AppImage-x64-f84e29.svg?logo=linux"> </a><br>
                 <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-amd64.deb"><img src="https://img.shields.io/badge/DebPackage-x64-FF9966.svg?logo=debian"> </a><br>
                 <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-amd64.rpm"><img src="https://img.shields.io/badge/RpmPackage-x64-F1B42F.svg?logo=redhat"> </a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-arm64.AppImage"><img src="https://img.shields.io/badge/AppImage-arm64-f84e29.svg?logo=linux"> </a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-arm64.deb"><img src="https://img.shields.io/badge/DebPackage-arm64-FF9966.svg?logo=debian"> </a><br>
-                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-arm64.rpm"><img src="https://img.shields.io/badge/RpmPackage-arm64-F1B42F.svg?logo=redhat"> </a>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-arm64.AppImage"><img src="https://img.shields.io/badge/AppImage-ARM64-f84e29.svg?logo=linux"> </a><br>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-arm64.deb"><img src="https://img.shields.io/badge/DebPackage-ARM64-FF9966.svg?logo=debian"> </a><br>
+                <a href="https://github.com/ABOLUOmathh/FlClashHX/releases/download/TAG/FlClashHX-VERSION-linux-arm64.rpm"><img src="https://img.shields.io/badge/RpmPackage-ARM64-F1B42F.svg?logo=redhat"> </a>
             </td>
         </tr>
     </tbody>

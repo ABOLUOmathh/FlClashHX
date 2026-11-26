@@ -7,90 +7,82 @@ import 'package:fl_clash/common/app_update.dart';
 import 'package:fl_clash/common/release_asset.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../tool/src/package/version.dart';
-
 void main() {
-  String? nameOn(Abi abi, {required bool windowsInstalled}) {
-    final asset = selfUpdateAssetFor(abi, windowsInstalled: windowsInstalled);
+  String? nameOn(Abi abi, {required bool replaceable}) {
+    final asset = selfUpdateAssetFor(abi, replaceable: replaceable);
     return asset == null ? null : updateAssetName('v0.9.4', asset);
   }
 
   group('selfUpdateAssetFor', () {
     test('names the APK built for the running ABI', () {
       expect(
-        nameOn(Abi.androidArm64, windowsInstalled: false),
-        '$releaseFilePrefix-dev-0.9.4-android-arm64.apk',
+        nameOn(Abi.androidArm64, replaceable: false),
+        '$releaseFilePrefix-0.9.4-android-arm64.apk',
       );
       expect(
-        nameOn(Abi.androidArm, windowsInstalled: false),
-        '$releaseFilePrefix-dev-0.9.4-android-armv7.apk',
+        nameOn(Abi.androidArm, replaceable: false),
+        '$releaseFilePrefix-0.9.4-android-armv7.apk',
       );
       expect(
-        nameOn(Abi.androidX64, windowsInstalled: false),
-        '$releaseFilePrefix-dev-0.9.4-android-amd64.apk',
+        nameOn(Abi.androidX64, replaceable: false),
+        '$releaseFilePrefix-0.9.4-android-amd64.apk',
       );
     });
 
     test('names the Windows installer only for an installed build', () {
       expect(
-        nameOn(Abi.windowsX64, windowsInstalled: true),
-        '$releaseFilePrefix-dev-0.9.4-windows-amd64-setup.exe',
+        nameOn(Abi.windowsX64, replaceable: true),
+        '$releaseFilePrefix-0.9.4-windows-amd64-setup.exe',
       );
       expect(
-        nameOn(Abi.windowsArm64, windowsInstalled: true),
-        '$releaseFilePrefix-dev-0.9.4-windows-arm64-setup.exe',
+        nameOn(Abi.windowsArm64, replaceable: true),
+        '$releaseFilePrefix-0.9.4-windows-arm64-setup.exe',
       );
-      expect(nameOn(Abi.windowsX64, windowsInstalled: false), isNull);
+      expect(nameOn(Abi.windowsX64, replaceable: false), isNull);
     });
 
-    test('leaves macOS and Linux to the release page', () {
-      for (final abi in [
-        Abi.macosArm64,
-        Abi.macosX64,
-        Abi.linuxX64,
-        Abi.linuxArm64,
-      ]) {
-        expect(nameOn(abi, windowsInstalled: true), isNull);
+    test('names the macOS dmg only for a bundle the updater can replace', () {
+      expect(
+        nameOn(Abi.macosArm64, replaceable: true),
+        '$releaseFilePrefix-0.9.4-macos-arm64.dmg',
+      );
+      expect(
+        nameOn(Abi.macosX64, replaceable: true),
+        '$releaseFilePrefix-0.9.4-macos-amd64.dmg',
+      );
+      expect(nameOn(Abi.macosArm64, replaceable: false), isNull);
+    });
+
+    test('leaves Linux to the release page', () {
+      for (final abi in [Abi.linuxX64, Abi.linuxArm64]) {
+        expect(nameOn(abi, replaceable: true), isNull);
       }
     });
   });
 
   test('asks for the files a rebuild tag published', () {
-    final asset = selfUpdateAssetFor(
-      Abi.androidArm64,
-      windowsInstalled: false,
-    )!;
+    final asset = selfUpdateAssetFor(Abi.androidArm64, replaceable: false)!;
 
     expect(
       updateAssetName('v0.9.4-pre.1+2', asset),
-      '$releaseFilePrefix-dev-0.9.4-pre.1.2-android-arm64.apk',
+      '$releaseFilePrefix-0.9.4-pre.1.2-android-arm64.apk',
     );
     expect(
       updateChecksumsName('v0.9.4-pre.1+2'),
-      '$releaseFilePrefix-dev-0.9.4-pre.1.2-SHA256SUMS',
+      '$releaseFilePrefix-0.9.4-pre.1.2-SHA256SUMS',
     );
   });
 
   test('releaseAssetName handles -hx tags properly', () {
-    final asset = selfUpdateAssetFor(
-      Abi.androidArm64,
-      windowsInstalled: false,
-    )!;
+    final asset = selfUpdateAssetFor(Abi.androidArm64, replaceable: false)!;
 
     expect(
-      updateAssetName('v0.9.4-hx.1', asset),
-      '$releaseFilePrefix-dev-0.9.4-hx.1-android-arm64.apk',
+      updateAssetName('v0.9.5-hx.1', asset),
+      '$releaseFilePrefix-0.9.5-hx.1-android-arm64.apk',
     );
     expect(
-      updateChecksumsName('v0.9.4-hx.1'),
-      '$releaseFilePrefix-dev-0.9.4-hx.1-SHA256SUMS',
-    );
-  });
-
-  test('updates from the line tool/package.dart names this build', () {
-    expect(
-      releaseLineOf(File('build_config.yaml').readAsStringSync()),
-      appReleaseLine,
+      updateChecksumsName('v0.9.5-hx.1'),
+      '$releaseFilePrefix-0.9.5-hx.1-SHA256SUMS',
     );
   });
 
@@ -100,24 +92,27 @@ void main() {
 
     test('reads the entry sha256sum wrote for a file', () {
       final sums =
-          '$digest  ./FlClash-0.9.2-android-arm64-v8a.apk\n'
-          '${'0' * 64}  ./FlClash-0.9.2-windows-amd64-setup.exe\n';
+          '$digest  $releaseFilePrefix-0.9.5-android-arm64.apk\n'
+          '${'0' * 64}  $releaseFilePrefix-0.9.5-windows-amd64-setup.exe\n';
 
       expect(
-        releaseChecksum(sums, 'FlClash-0.9.2-android-arm64-v8a.apk'),
+        releaseChecksum(sums, '$releaseFilePrefix-0.9.5-android-arm64.apk'),
         digest,
       );
     });
 
     test('accepts the binary marker, upper case and CRLF', () {
-      final sums = '${digest.toUpperCase()} *FlClash.apk\r\n';
+      final sums = '${digest.toUpperCase()} *$releaseFilePrefix.apk\r\n';
 
-      expect(releaseChecksum(sums, 'FlClash.apk'), digest);
+      expect(releaseChecksum(sums, '$releaseFilePrefix.apk'), digest);
     });
 
     test('answers null for a file the listing does not name', () {
-      expect(releaseChecksum('$digest  ./other.apk\n', 'FlClash.apk'), isNull);
-      expect(releaseChecksum('not a listing', 'FlClash.apk'), isNull);
+      expect(
+        releaseChecksum('$digest  other.apk\n', '$releaseFilePrefix.apk'),
+        isNull,
+      );
+      expect(releaseChecksum('not a listing', '$releaseFilePrefix.apk'), isNull);
     });
   });
 

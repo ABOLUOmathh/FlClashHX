@@ -1,4 +1,4 @@
-cask "flclash" do
+cask "flclashhx" do
   version "VERSION"
 
   on_macos do
@@ -7,12 +7,12 @@ cask "flclash" do
     sha256 arm:   "ARM_SHA256",
            intel: "AMD_SHA256"
 
-    url "https://github.com/chen08209/FlClash/releases/download/v#{version}/FlClash-LINE-#{version}-macos-#{arch}.dmg"
+    url "https://github.com/ABOLUOmathh/FlClashHX/releases/download/v#{version}/FlClashHX-#{version}-macos-#{arch}.dmg"
   end
 
-  name "FlClash"
+  name "FlClashHX"
   desc "Multi-platform proxy client based on ClashMeta"
-  homepage "https://github.com/chen08209/FlClash"
+  homepage "https://github.com/ABOLUOmathh/FlClashHX"
 
   livecheck do
     url :url
@@ -21,21 +21,21 @@ cask "flclash" do
 
   depends_on :macos
 
-  app "FlClash.app"
+  app "FlClashHX.app"
 
   postflight_steps do
     run "/usr/bin/xattr",
-        args:           ["-rd", "com.apple.quarantine", "{{appdir}}/FlClash.app"],
-        writable_paths: ["FlClash.app"],
+        args:           ["-rd", "com.apple.quarantine", "{{appdir}}/FlClashHX.app"],
+        writable_paths: ["FlClashHX.app"],
         writable_base:  :appdir
   end
 
-  uninstall quit: "com.follow.clash"
+  uninstall quit: "com.follow.clashhx"
 
   zap trash: [
-    "~/Library/Application Support/com.follow.clash",
-    "~/Library/Caches/com.follow.clash",
-    "~/Library/Preferences/com.follow.clash.plist",
-    "~/Library/Saved Application State/com.follow.clash.savedState",
+    "~/Library/Application Support/com.follow.clashhx",
+    "~/Library/Caches/com.follow.clashhx",
+    "~/Library/Preferences/com.follow.clashhx.plist",
+    "~/Library/Saved Application State/com.follow.clashhx.savedState",
   ]
 end

@@ -13,10 +13,10 @@ concurrency:
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
 
 env:
-  IS_STABLE: ${{ !contains(github.ref, '-alpha') && !contains(github.ref, '-beta') && !contains(github.ref, '-rc') }}
+  IS_STABLE: ${{ !contains(github.ref, '-alpha') && !contains(github.ref, '-beta') && !contains(github.ref, '-rc') && !contains(github.ref, '-pre') && !contains(github.ref, '-rs') && !contains(github.ref, '-nightly') }}
   # See CI Caches in .agents/commands.md.
   BRANCH_CACHE: ${{ !startsWith(github.ref, 'refs/tags/') }}
-  FLUTTER_VERSION: '3.50.0'
+  FLUTTER_VERSION: '3.50.1'
   GO_VERSION: '1.27.1'
   NDK_VERSION: r28c
 
@@ -500,6 +500,11 @@ jobs:
               sleep 5
             done
           fi
+
+      # See .agents/flutter-upgrade.md before bumping FLUTTER_VERSION.
+      - name: Disable Impeller on Intel macOS
+        if: matrix.platform == 'macos' && matrix.arch == 'amd64'
+        run: plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist
       # The core embeds this bundle and FlClashHttpOverrides.trustCoreRoots loads it for Dart.
       # Pinned by hash, so a new bundle from https://curl.se/docs/caextract.html is a reviewed bump.
       - name: Fetch CA certificates
@@ -590,70 +595,68 @@ jobs:
         run: |
           target=()
           if [[ "$IS_STABLE" == 'true' ]]; then
-            target=(--tag "$TAG")
+            base_tag="${TAG%%-hx.*}"
+            target=(--tag "$base_tag")
           else
             dart run tool/changelog.dart build --unreleased || true
           fi
           dart run tool/changelog.dart render release "${target[@]}" --out release.md || true
-          dart run tool/changelog.dart render telegram "${target[@]}" --out telegram.md || true
           touch release.md
-
-      - name: Push to telegram
-        if: ${{ env.IS_STABLE == 'true' && env.TELEGRAM_BOT_TOKEN != '' }}
-        env:
-          TAG: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
-          python release_telegram.py
 
       - name: Patch release.md
         run: |
           touch release.md
-          tag="${{ github.ref_name }}"
-          pkg_version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' pubspec.yaml)
-          sed -e "s|TAG|$tag|g" -e "s|VERSION|$pkg_version|g" ./.github/release_template.md >> release.md
+          version=$(jq -r '.artifacts[0].version' dist/manifest.json)
+          sed -e "s|TAG|${{ github.ref_name }}|g" -e "s|VERSION|$version|g" \
+            ./.github/release_template.md >> release.md
+
+      - name: Check every file the release is looked up by
+        run: dart run tool/package.dart check dist
 
       # Generate version aliases and legacy asset names for backwards compatibility
       - name: Copy legacy and version-aliased assets
+        shell: bash
         run: |
+          shopt -s nullglob
           cd ./dist
           tag="${{ github.ref_name }}"
           version="${tag#v}"
           base_version="${version%%-*}"
-          pkg_version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' ../pubspec.yaml)
           if [ -f manifest.json ]; then
-            # Full version names (e.g. FlClashHX-0.9.4-hx.1-android-arm64-v8a.apk)
+            # Aliases with -dev- prefix for v0.9.4-hx.x clients
             jq -r '.artifacts[]
-              | select(.line == "dev")
-              | select((.os == "windows" and .form == "setup") or .os == "android")
-              | [.name, "FlClashHX-\(.version)-" + (
+              | select((.os == "windows" and .form == "setup") or .os == "android" or .os == "macos")
+              | [.name, "FlClashHX-dev-\(.version)-" + (
                   if .os == "windows" then "windows-\(.arch)-setup.exe"
-                  else "android-" + {arm64: "arm64-v8a", armv7: "armeabi-v7a", amd64: "x86_64"}[.arch] + ".apk"
+                  elif .os == "macos" then "macos-\(.arch).dmg"
+                  else "android-\(.arch).apk"
                   end)]
               | @tsv' manifest.json 2>/dev/null |
               while IFS=$'\t' read -r name legacy; do
                 [ -f "$name" ] && cp "$name" "$legacy"
               done
 
-            # Base version names without -hx suffix (e.g. FlClashHX-0.9.4-android-arm64-v8a.apk)
-            # Required for in-app updates from older FlClashHX clients (v0.9.3 and earlier)
-            if [ -n "$base_version" ] && [ "$base_version" != "$version" ]; then
-              jq -r --arg base "$base_version" '.artifacts[]
-                | select(.line == "dev")
+            dev_files=(FlClashHX-dev-"${version}"-*)
+            if [ ${#dev_files[@]} -gt 0 ]; then
+              sha256sum "${dev_files[@]}" > "FlClashHX-dev-${version}-SHA256SUMS"
+            fi
+
+            # Legacy ABI names for v0.9.3-hx.x and earlier clients (with and without -hx suffix)
+            for target_ver in "$version" "$base_version"; do
+              [ -n "$target_ver" ] || continue
+              jq -r --arg ver "$target_ver" '.artifacts[]
                 | select((.os == "windows" and .form == "setup") or .os == "android")
-                | [.name, "FlClashHX-\($base)-" + (
+                | [.name, "FlClashHX-\($ver)-" + (
                     if .os == "windows" then "windows-\(.arch)-setup.exe"
                     else "android-" + {arm64: "arm64-v8a", armv7: "armeabi-v7a", amd64: "x86_64"}[.arch] + ".apk"
                     end)]
                 | @tsv' manifest.json 2>/dev/null |
                 while IFS=$'\t' read -r name legacy; do
-                  [ -f "$name" ] && cp "$name" "$legacy"
+                  [ -f "$name" ] && [ "$name" != "$legacy" ] && cp "$name" "$legacy"
                 done
-            fi
+            done
           fi
-          sha256sum ./* > SHA256SUMS
+          sha256sum ./*.apk ./*.exe ./*.zip ./*.dmg ./*.deb ./*.rpm ./*.AppImage > SHA256SUMS 2>/dev/null || sha256sum ./* > SHA256SUMS
 
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -661,35 +664,27 @@ jobs:
           files: ./dist/*
           body_path: './release.md'
           prerelease: ${{ env.IS_STABLE != 'true' }}
+          make_latest: ${{ env.IS_STABLE == 'true' }}
 
       - name: Create Homebrew Cask Source Dir
-        if: ${{ env.IS_STABLE == 'true' && env.HOMEBREW_SSH_DEPLOY_KEY != '' }}
+        if: ${{ github.repository == 'chen08209/FlClash' && env.IS_STABLE == 'true' && env.HOMEBREW_SSH_DEPLOY_KEY != '' }}
         run: |
-          if [ -f dist/manifest.json ]; then
-            dmg() {
-              jq -er --arg arch "$1" '.artifacts[] | select(.os == "macos" and .arch == $arch)' dist/manifest.json
-            }
-            line=$(dmg arm64 | jq -r .line)
-            version=$(dmg arm64 | jq -r .version)
-            arm_sha=$(dmg arm64 | jq -r .sha256)
-            amd_sha=$(dmg amd64 | jq -r .sha256)
-          else
-            line="dev"
-            version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-            arm_sha=$(sha256sum "./dist/FlClashHX-${version}-macos-arm64.dmg" 2>/dev/null | awk '{print $1}')
-            amd_sha=$(sha256sum "./dist/FlClashHX-${version}-macos-amd64.dmg" 2>/dev/null | awk '{print $1}')
-          fi
+          dmg() {
+            jq -er --arg arch "$1" '.artifacts[] | select(.os == "macos" and .arch == $arch)' dist/manifest.json
+          }
+          version=$(dmg arm64 | jq -r .version)
+          arm_sha=$(dmg arm64 | jq -r .sha256)
+          amd_sha=$(dmg amd64 | jq -r .sha256)
 
           mkdir -p ./brew/Casks
           sed \
-            -e "s|LINE|$line|g" \
             -e "s|VERSION|$version|g" \
             -e "s|ARM_SHA256|$arm_sha|g" \
             -e "s|AMD_SHA256|$amd_sha|g" \
             ./.github/homebrew_cask_template.rb > ./brew/Casks/flclashhx.rb
 
       - name: Push to Homebrew tap
-        if: ${{ env.IS_STABLE == 'true' && env.HOMEBREW_SSH_DEPLOY_KEY != '' }}
+        if: ${{ github.repository == 'chen08209/FlClash' && env.IS_STABLE == 'true' && env.HOMEBREW_SSH_DEPLOY_KEY != '' }}
         uses: cpina/github-action-push-to-another-repository@v1.7.2
         env:
           SSH_DEPLOY_KEY: ${{ secrets.HOMEBREW_SSH_DEPLOY_KEY }}
@@ -704,14 +699,14 @@ jobs:
           target-directory: /
 
       - name: Create Fdroid Source Dir
-        if: ${{ env.IS_STABLE == 'true' && env.SSH_DEPLOY_KEY != '' }}
+        if: ${{ github.repository == 'chen08209/FlClash' && env.IS_STABLE == 'true' && env.SSH_DEPLOY_KEY != '' }}
         run: |
           mkdir -p ./tmp
           apk=$(jq -er '.artifacts[] | select(.os == "android" and .arch == "arm64") | .name' dist/manifest.json)
           cp "./dist/$apk" ./tmp/
 
       - name: Push to fdroid repo
-        if: ${{ env.IS_STABLE == 'true' && env.SSH_DEPLOY_KEY != '' }}
+        if: ${{ github.repository == 'chen08209/FlClash' && env.IS_STABLE == 'true' && env.SSH_DEPLOY_KEY != '' }}
         uses: cpina/github-action-push-to-another-repository@v1.7.2
         env:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
@@ -724,3 +719,22 @@ jobs:
           target-branch: main
           commit-message: Update from ${{ github.ref_name }}
           target-directory: /tmp/
+
+      # After the packages, so a failed post holds none of them back.
+      - name: Post to Telegram
+        if: ${{ github.repository == 'chen08209/FlClash' || env.TELEGRAM_BOT_TOKEN != '' }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: dart tool/publish.dart telegram "$TAG"
+
+      # Runs last, so a failed cleanup holds back no announcement or package.
+      - name: Delete superseded prereleases
+        if: ${{ github.repository == 'chen08209/FlClash' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" | jq -s add > releases.json
+          dart tool/publish.dart prune "$TAG" --releases releases.json
